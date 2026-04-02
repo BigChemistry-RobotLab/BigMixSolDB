@@ -12,8 +12,9 @@ This repository contains the workflow for extracting experimental solubility dat
 
 The workflow covers the steps used in the article:
 
-1a. Parse PDFs with Docling to Markdown.
-1b. Parse PDFs or page images with a VLM to Markdown.
+1. Parse PDFs with:
+    - Docling to Markdown.
+    - VLM to Markdown.
 2. Extract structured solubility data from Markdown to YAML with an LLM.
 3. Extract molecule names into an editable JSON file with empty SMILES placeholders.
 4. Optionally resolve SMILES in that JSON with ChemScript and PubChem fallback.
@@ -211,3 +212,40 @@ python scripts/postprocess_yaml.py outputs/yaml \
 ```
 
 Each YAML file becomes one standardized CSV. This is useful if you want per-paper intermediate outputs instead of a single merged dataset.
+
+### Create a Fine-Tuning Dataset
+
+Pair Markdown inputs with curated YAML labels that share the same filename stem and write them as chat-style JSONL for supervised fine-tuning.
+
+```bash
+python scripts/create_finetune_dataset.py outputs/docling \
+  --labels data/train \
+  --output data/ft_dataset_train.jsonl
+
+python scripts/create_finetune_dataset.py outputs/docling \
+  --labels data/val \
+  --output data/ft_dataset_val.jsonl
+```
+
+You can point `inputs` at either `outputs/docling` or `outputs/vlm`, and `--labels` at any YAML files or directories. Matching is done by filename stem, so `10.1021_...md` pairs with `10.1021_....yml`.
+
+### Fine-Tune a Hugging Face Model
+
+Install PyTorch for your hardware first, then install the finetuning extras:
+
+```bash
+pip install torch
+pip install -e ".[finetune]"
+```
+
+Run supervised fine-tuning with a train split and optional validation split:
+
+```bash
+python scripts/finetune.py \
+  --model Qwen/Qwen3-8B \
+  --train-data data/ft_dataset_train.jsonl \
+  --validation-data data/ft_dataset_val.jsonl \
+  --output-dir checkpoints
+```
+
+You can also pass a YAML or JSON config file to supply `SFTConfig` arguments such as batch size, learning rate, number of epochs, or mixed-precision settings.
