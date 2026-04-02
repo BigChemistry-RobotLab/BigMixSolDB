@@ -1,0 +1,42 @@
+- compound: Oxygen
+  synonyms: O2
+  entries:
+    - su: Bunsen absorption coefficient
+      temp: 25
+      tu: C
+      pres: 1
+      pu: atm
+      data:
+        - solv, sol
+        - γ-Butyrolactone, 0.0499
+        - Propylene carbonate, 0.0153
+        - Dimethyl sulfoxide, 0.0342
+        - N-nitrosodimethylamine, 0.0605
+    - solv: γ-Butyrolactone | LiClO4
+      cu: M
+      su: Bunsen coefficient
+      temp: 25
+      tu: C
+      pres: 1
+      pu: atm
+      data:
+        - c2, sol
+        - 0.00, 0.0499
+        - 0.20, 0.0513
+        - 0.45, 0.0531
+        - 0.60, 0.0495
+        - 0.80, 0.0513
+    - solv: Propylene carbonate | LiClO4
+      cu: M
+      su: Bunsen coefficient
+      temp: 25
+      tu: C
+      pres: 1
+      pu: atm
+      data:
+        - c2, sol
+        - 0.00, 0.0153
+        - 0.50, 0.0140
+        - 0.50, 0.0150
+        - 1.00, 0.0150
+        - 1.00, 0.0160

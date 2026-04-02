@@ -1,0 +1,66 @@
+- compound: Diosmin
+  synonyms: 3,5,7-Trihydroxy-4-methoxyflavone-7-rutinoside
+  entries:
+  - solv: Water
+    su: mole fraction
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $1.25 \times 10^{-6}$, 298.15
+    - $1.87 \times 10^{-6}$, 303.15
+    - $3.43 \times 10^{-6}$, 313.15
+    - $6.56 \times 10^{-6}$, 323.15
+    - $1.03 \times 10^{-5}$, 333.15
+  - solv: Ethanol
+    su: mole fraction
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $2.57 \times 10^{-6}$, 298.15
+    - $3.78 \times 10^{-6}$, 303.15
+    - $6.81 \times 10^{-6}$, 313.15
+    - $1.21 \times 10^{-5}$, 323.15
+    - $1.96 \times 10^{-5}$, 333.15
+  - solv: IsoPropyl Alcohol
+    su: mole fraction
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $3.95 \times 10^{-6}$, 298.15
+    - $5.62 \times 10^{-6}$, 303.15
+    - $8.88 \times 10^{-6}$, 313.15
+    - $1.58 \times 10^{-5}$, 323.15
+    - $2.76 \times 10^{-5}$, 333.15
+  - solv: PEG-400
+    su: mole fraction
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $8.47 \times 10^{-4}$, 298.15
+    - $8.66 \times 10^{-4}$, 303.15
+    - $9.06 \times 10^{-4}$, 313.15
+    - $9.52 \times 10^{-4}$, 323.15
+    - $1.00 \times 10^{-3}$, 333.15
+  - solv: Water | $\beta$-Cyclodextrin
+    su: mole fraction
+    c2: 0.02
+    cu: mol·L^-1
+    tu: K
+    pres: 0.1
+    pu: MPa
+    note: 0.02 mol $\cdot$ L$^{-1}$
+    data:
+    - sol, temp
+    - $1.85 \times 10^{-3}$, 298.15
+    - $1.95 \times 10^{-3}$, 303.15
+    - $2.21 \times 10^{-3}$, 313.15
+    - $2.51 \times 10^{-3}$, 323.15
+    - $2.82 \times 10^{-3}$, 333.15

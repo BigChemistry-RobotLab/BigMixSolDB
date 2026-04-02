@@ -1,0 +1,33 @@
+- compound: Benzene
+  entries:
+    - solv: Water
+      su: g/100 g H2O
+      temp: 21
+      tu: C
+      data:
+        - sol
+        - 0.178
+        - 0.152
+        - 0.183
+        - 0.184
+- compound: Toluene
+  entries:
+    - solv: Water
+      su: g/100 g H2O
+      temp: 21
+      tu: C
+      data:
+        - sol
+        - 0.0394
+        - 0.0607
+        - 0.0435
+- compound: Chlorobenzene
+  entries:
+    - solv: Water
+      su: g/100 g H2O
+      temp: 21
+      tu: C
+      data:
+        - sol
+        - 0.0546
+        - 0.0523

@@ -1,0 +1,250 @@
+- compound: Tylosin tartrate
+  entries:
+  - solv: Methanol | THF
+    c1: 0
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 0.72, 293.15
+    - 0.84, 298.15
+    - 0.92, 303.15
+    - 1.03, 308.15
+    - 1.20, 313.15
+    - 1.34, 318.15
+    - 1.51, 323.15
+  - solv: Methanol | THF
+    c1: 0.1
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 1.88, 293.15
+    - 2.12, 298.15
+    - 2.30, 303.15
+    - 2.72, 308.15
+    - 3.09, 313.15
+    - 3.44, 318.15
+    - 3.84, 323.15
+  - solv: Methanol | THF
+    c1: 0.3
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 8.95, 293.15
+    - 9.57, 298.15
+    - 10.15, 303.15
+    - 11.10, 308.15
+    - 11.91, 313.15
+    - 13.21, 318.15
+    - 14.69, 323.15
+  - solv: Methanol | THF
+    c1: 0.4
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 11.55, 293.15
+    - 12.46, 298.15
+    - 13.67, 303.15
+    - 14.82, 308.15
+    - 16.03, 313.15
+    - 17.31, 318.15
+    - 18.68, 323.15
+  - solv: Methanol | THF
+    c1: 0.5
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 12.16, 293.15
+    - 13.03, 298.15
+    - 14.32, 303.15
+    - 15.31, 308.15
+    - 17.14, 313.15
+    - 18.64, 318.15
+    - 20.28, 323.15
+  - solv: Methanol | THF
+    c1: 0.6
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 10.12, 293.15
+    - 11.03, 298.15
+    - 12.05, 303.15
+    - 13.01, 308.15
+    - 14.02, 313.15
+    - 15.72, 318.15
+    - 17.16, 323.15
+  - solv: Methanol | THF
+    c1: 0.8
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 6.79, 293.15
+    - 7.31, 298.15
+    - 8.01, 303.15
+    - 8.96, 308.15
+    - 10.29, 313.15
+    - 11.39, 318.15
+    - 13.03, 323.15
+  - solv: Methanol | THF
+    c1: 1.0
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 4.57, 293.15
+    - 5.08, 298.15
+    - 5.79, 303.15
+    - 6.38, 308.15
+    - 7.22, 313.15
+    - 8.41, 318.15
+    - 9.93, 323.15
+  - solv: Methanol | Acetone
+    c1: 0
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 0.34, 298.15
+    - 0.38, 303.15
+    - 0.44, 308.15
+    - 0.51, 313.15
+    - 0.57, 318.15
+    - 0.68, 323.15
+  - solv: Methanol | Acetone
+    c1: 0.1
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 0.62, 298.15
+    - 0.70, 303.15
+    - 0.80, 308.15
+    - 0.90, 313.15
+    - 1.02, 318.15
+    - 1.22, 323.15
+  - solv: Methanol | Acetone
+    c1: 0.2
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 1.41, 298.15
+    - 1.59, 303.15
+    - 1.79, 308.15
+    - 2.09, 313.15
+    - 2.44, 318.15
+    - 2.87, 323.15
+  - solv: Methanol | Acetone
+    c1: 0.3
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 2.94, 298.15
+    - 3.40, 303.15
+    - 3.79, 308.15
+    - 4.25, 313.15
+    - 4.84, 318.15
+    - 5.57, 323.15
+  - solv: Methanol | Acetone
+    c1: 0.5
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 5.76, 298.15
+    - 6.69, 303.15
+    - 7.58, 308.15
+    - 8.41, 313.15
+    - 9.53, 318.15
+    - 10.82, 323.15
+  - solv: Methanol | Acetone
+    c1: 0.6
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 6.79, 298.15
+    - 7.47, 303.15
+    - 8.29, 308.15
+    - 9.14, 313.15
+    - 10.42, 318.15
+    - 12.02, 323.15
+  - solv: Methanol | Acetone
+    c1: 0.8
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 6.31, 298.15
+    - 7.12, 303.15
+    - 7.77, 308.15
+    - 8.62, 313.15
+    - 9.94, 318.15
+    - 11.37, 323.15
+  - solv: Methanol | Acetone
+    c1: 1.0
+    cu: mass fraction
+    su: $10^{3} \cdot x$
+    tu: K
+    pres: 101.3
+    pu: kPa
+    data:
+    - sol, temp
+    - 5.08, 298.15
+    - 5.79, 303.15
+    - 6.38, 308.15
+    - 7.22, 313.15
+    - 8.41, 318.15
+    - 9.92, 323.15

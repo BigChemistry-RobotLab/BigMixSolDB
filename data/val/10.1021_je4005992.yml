@@ -1,0 +1,75 @@
+- compound: 3,4-Bis(3-nitrofurazan-4-yl)furoxan
+  synonyms: DNTF
+  entries:
+  - solv: water
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+      - sol, temp
+      - $1.24836 \cdot 10^{-6}$, 298.15
+      - $2.08252 \cdot 10^{-6}$, 303.15
+      - $3.05167 \cdot 10^{-6}$, 308.15
+      - $4.65826 \cdot 10^{-6}$, 313.15
+      - $6.97959 \cdot 10^{-6}$, 318.15
+  - solv: dichloromethane
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+      - sol, temp
+      - $5.86643 \cdot 10^{-3}$, 298.15
+      - $8.35691 \cdot 10^{-3}$, 303.15
+      - $1.18844 \cdot 10^{-2}$, 308.15
+      - $1.93951 \cdot 10^{-2}$, 313.15
+      - $2.57207 \cdot 10^{-2}$, 318.15
+  - solv: ethanol
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+      - sol, temp
+      - $3.74638 \cdot 10^{-3}$, 298.15
+      - $5.90213 \cdot 10^{-3}$, 303.15
+      - $7.15981 \cdot 10^{-3}$, 308.15
+      - $1.07690 \cdot 10^{-2}$, 313.15
+      - $1.35733 \cdot 10^{-2}$, 318.15
+  - solv: ethyl ethanoate
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+      - sol, temp
+      - $5.90265 \cdot 10^{-2}$, 298.15
+      - $8.77970 \cdot 10^{-2}$, 303.15
+      - $1.07174 \cdot 10^{-1}$, 308.15
+      - $1.38312 \cdot 10^{-1}$, 313.15
+      - $1.79883 \cdot 10^{-1}$, 318.15
+  - solv: methanol
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+      - sol, temp
+      - $1.44417 \cdot 10^{-2}$, 298.15
+      - $1.71022 \cdot 10^{-2}$, 303.15
+      - $1.91423 \cdot 10^{-2}$, 308.15
+      - $2.04818 \cdot 10^{-2}$, 313.15
+      - $2.26801 \cdot 10^{-2}$, 318.15
+  - solv: trichloromethane
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+      - sol, temp
+      - $5.03899 \cdot 10^{-3}$, 298.15
+      - $6.83307 \cdot 10^{-3}$, 303.15
+      - $8.72524 \cdot 10^{-3}$, 308.15
+      - $1.25756 \cdot 10^{-2}$, 313.15
+      - $1.59181 \cdot 10^{-2}$, 318.15

@@ -1,0 +1,63 @@
+- compound: Butyl Paraben
+  synonyms: Butyl 4-hydroxybenzoate
+  entries:
+  - solv: Methanol
+    su: $100\, w$
+    tu: C
+    data:
+    - sol, temp
+    - 63.747, 9.9
+    - 72.337, 19.9
+    - 79.107, 29.9
+    - 85.382, 39.9
+    - 91.161, 49.9
+  - solv: Ethanol
+    su: $100\, w$
+    tu: C
+    data:
+    - sol, temp
+    - 59.644, 9.9
+    - 67.228, 19.9
+    - 75.54, 29.9
+    - 82.42, 39.9
+    - 89.321, 49.9
+  - solv: Acetone
+    su: $100\, w$
+    tu: C
+    data:
+    - sol, temp
+    - 60.032, 9.9
+    - 66.623, 19.9
+    - 72.983, 29.9
+    - 79.436, 39.9
+    - 86.062, 49.9
+  - solv: Propanol
+    su: $100\, w$
+    tu: C
+    data:
+    - sol, temp
+    - 56.45, 9.9
+    - 63.368, 19.9
+    - 70.603, 29.9
+    - 77.721, 39.9
+    - 84.955, 49.9
+  - solv: Ethyl Acetate
+    su: $100\, w$
+    tu: C
+    data:
+    - sol, temp
+    - 42.415, 9.9
+    - 50.085, 19.9
+    - 59.077, 29.9
+    - 68.848, 39.9
+    - 78.087, 49.9
+  - solv: Acetonitrile
+    su: $100\, w$
+    tu: C
+    data:
+    - sol, temp
+    - 27.47, 9.9
+    - 44.874, 19.9
+    - 60.998, 29.9
+    - 75.275, 39.9
+    - 85.689, 49.9

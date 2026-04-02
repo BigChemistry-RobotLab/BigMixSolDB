@@ -1,0 +1,199 @@
+- compound: Clindamycin Phosphate
+  synonyms: (2S-trans)-methyl 7-chloro-6,7,8-trideoxy-6-(1-methyl-trans-4-propyl-L-2-pyrrolidinecarboxamido)-1-thio-L-threo-R-D-galacto-octopyranoside-2-(dihydrogen phosphate) | 4729-96-2
+  entries:
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 278.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.006
+        - 0.1499, 1.37
+        - 0.3085, 1.7
+        - 0.4502, 3.8
+        - 0.6150, 5.81
+        - 0.7518, 18.48
+        - 1.0000, 176.08
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 283.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.09
+        - 0.1499, 1.48
+        - 0.3085, 2.57
+        - 0.4502, 4.54
+        - 0.6150, 6.78
+        - 0.7518, 21.42
+        - 1.0000, 179.86
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 288.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.09
+        - 0.1499, 1.71
+        - 0.3085, 3.61
+        - 0.4502, 5.19
+        - 0.6150, 7.53
+        - 0.7518, 34.33
+        - 1.0000, 185.89
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 293.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.11
+        - 0.1499, 2.84
+        - 0.3085, 3.74
+        - 0.4502, 6.08
+        - 0.6150, 9.4
+        - 0.7518, 36.93
+        - 1.0000, 199.57
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 298.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.14
+        - 0.1499, 3.22
+        - 0.3085, 4.1
+        - 0.4502, 8.76
+        - 0.6150, 13.6
+        - 0.7518, 43.2
+        - 1.0000, 202.92
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 303.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.24
+        - 0.1499, 4.18
+        - 0.3085, 5.72
+        - 0.4502, 9.17
+        - 0.6150, 15.12
+        - 0.7518, 50.89
+        - 1.0000, 209.42
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 308.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.31
+        - 0.1499, 4.57
+        - 0.3085, 6.16
+        - 0.4502, 12.99
+        - 0.6150, 19.49
+        - 0.7518, 51.27
+        - 1.0000, 216.65
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 313.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.34
+        - 0.1499, 5
+        - 0.3085, 7.37
+        - 0.4502, 14.07
+        - 0.6150, 20.86
+        - 0.7518, 53.43
+        - 1.0000, 222.86
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 318.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.42
+        - 0.1499, 5.44
+        - 0.3085, 7.98
+        - 0.4502, 17.28
+        - 0.6150, 25.74
+        - 0.7518, 60.87
+        - 1.0000, 227.87
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 323.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.45
+        - 0.1499, 5.55
+        - 0.3085, 11.03
+        - 0.4502, 24.52
+        - 0.6150, 35.61
+        - 0.7518, 63.74
+        - 1.0000, 231.77
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 328.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.47
+        - 0.1499, 6.73
+        - 0.3085, 14.73
+        - 0.4502, 25.58
+        - 0.6150, 37.64
+        - 0.7518, 66.81
+        - 1.0000, 234.95
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 333.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.56
+        - 0.1499, 7.62
+        - 0.3085, 16.12
+        - 0.4502, 27.23
+        - 0.6150, 39.82
+        - 0.7518, 69.05
+        - 1.0000, 240.71
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 338.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 0.74
+        - 0.1499, 8.72
+        - 0.3085, 19.74
+        - 0.4502, 28.97
+        - 0.6150, 42.91
+        - 0.7518, 76.5
+        - 1.0000, 251.87
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 343.15
+      tu: K
+      data:
+        - c1, sol
+        - 0.0000, 1.12
+        - 0.1499, 11.4
+        - 0.3085, 21.79
+        - 0.4502, 34.51
+        - 0.6150, 50.63
+        - 0.7518, 91.47
+        - 1.0000, 292.39

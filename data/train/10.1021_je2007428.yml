@@ -1,0 +1,84 @@
+- compound: Calcium(II) deoxycholate
+  entries:
+    - solv: Water | NaCl
+      cu: mol · dm^{-3}
+      su: -log k
+      temp: 25
+      tu: C
+      data:
+        - c1, sol
+        - 0.15, 9.40
+        - 0.50, 9.03
+    - solv: Water | N(CH3)4Cl
+      c1: 0.50
+      cu: mol · dm^{-3}
+      temp: 25
+      tu: C
+      sol: 9.20
+      su: -log k
+- compound: Calcium(II) cholate
+  entries:
+    - solv: Water | NaCl
+      cu: mol · dm^{-3}
+      su: -log k
+      temp: 25
+      tu: C
+      data:
+        - c1, sol
+        - 0.15, 6.50
+        - 0.50, 6.40
+- compound: Calcium(II) glycodeoxycholate
+  entries:
+    - solv: Water | NaCl
+      cu: mol · dm^{-3}
+      su: -log k
+      temp: 25
+      tu: C
+      data:
+        - c1, sol
+        - 0.15, 7.58
+        - 0.50, 6.75
+- compound: Calcium(II) chenodeoxycholate
+  entries:
+    - solv: Water | NaCl
+      cu: mol · dm^{-3}
+      su: -log k
+      temp: 25
+      tu: C
+      data:
+        - c1, sol
+        - 0.15, 8.72
+        - 0.50, 8.53
+- compound: Calcium(II) ursodeoxycholate
+  entries:
+    - solv: Water | NaCl
+      cu: mol · dm^{-3}
+      su: -log k
+      temp: 25
+      tu: C
+      data:
+        - c1, sol
+        - 0.15, 8.35
+        - 0.50, 8.27
+- compound: Calcium(II) dehydrocholate
+  entries:
+    - solv: Water | NaCl
+      cu: mol · dm^{-3}
+      su: -log k
+      temp: 25
+      tu: C
+      data:
+        - c1, sol
+        - 0.15, 6.71
+        - 0.50, 6.28
+- compound: Calcium(II) lithocholate
+  entries:
+    - solv: Water | NaCl
+      cu: mol · dm^{-3}
+      su: -log k
+      temp: 25
+      tu: C
+      data:
+        - c1, sol
+        - 0.15, 15.45
+        - 0.50, 15.07

@@ -1,0 +1,17 @@
+- compound: Thallium(III) sulfate
+  synonyms: HTl(SO4)2 4H2O
+  entries:
+    - solv: Sulfuric acid | Water
+      cu: wt%
+      su: g/100 g of acid solution
+      tu: C
+      data:
+        - c1, sol, temp
+        - 30, 12.37, 0
+        - 40, 0.76, 0
+        - 50, 0.288, 0
+        - 30, 18.8, 25
+        - 40, 1.8, 25
+        - 50, 0.414, 25
+        - 50, 0.1, 25
+        - 70, 0.34, 25

@@ -1,0 +1,170 @@
+- compound: L-Phenylalanine
+  entries:
+  - solv: Methanol | Water
+    c1: 1.0
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 3.205, 288.15
+    - 4.155, 293.15
+    - 5.635, 298.15
+    - 6.498, 303.15
+    - 7.432, 308.15
+  - solv: Methanol | Water
+    c1: 0.8082
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 6.213, 288.15
+    - 7.468, 293.15
+    - 8.75, 298.15
+    - 10.194, 303.15
+    - 11.879, 308.15
+  - solv: Methanol | Water
+    c1: 0.6032
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 9.106, 288.15
+    - 10.824, 293.15
+    - 12.261, 298.15
+    - 14.337, 303.15
+    - 16.298, 308.15
+  - solv: Methanol | Water
+    c1: 0.4054
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 12.118, 288.15
+    - 14.098, 293.15
+    - 15.867, 298.15
+    - 18.408, 303.15
+    - 21.264, 308.15
+  - solv: Methanol | Water
+    c1: 0.2035
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 14.553, 288.15
+    - 17.916, 293.15
+    - 20.548, 298.15
+    - 23.072, 303.15
+    - 26.08, 308.15
+  - solv: Methanol | Water
+    c1: 0.0
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 21.942, 288.15
+    - 24.735, 293.15
+    - 27.67, 298.15
+    - 31.226, 303.15
+    - 34.758, 308.15
+  - solv: Ethanol | Water
+    c1: 1.0
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 0.89, 288.15
+    - 0.996, 293.15
+    - 1.165, 298.15
+    - 1.344, 303.15
+    - 1.605, 308.15
+  - solv: Ethanol | Water
+    c1: 0.8082
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 2.614, 288.15
+    - 3.354, 293.15
+    - 4.292, 298.15
+    - 5.25, 303.15
+    - 5.956, 308.15
+  - solv: Ethanol | Water
+    c1: 0.6032
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 4.396, 288.15
+    - 5.682, 293.15
+    - 7.251, 298.15
+    - 9.421, 303.15
+    - 11.242, 308.15
+  - solv: Ethanol | Water
+    c1: 0.4054
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 6.362, 288.15
+    - 8.81, 293.15
+    - 10.369, 298.15
+    - 14.286, 303.15
+    - 16.55, 308.15
+  - solv: Ethanol | Water
+    c1: 0.2035
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 10.381, 288.15
+    - 13.77, 293.15
+    - 14.981, 298.15
+    - 18.719, 303.15
+    - 21.92, 308.15
+  - solv: Ethanol | Water
+    c1: 0.0
+    cu: mole fraction
+    su: 10^4·x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 21.942, 288.15
+    - 24.735, 293.15
+    - 27.67, 298.15
+    - 31.226, 303.15
+    - 34.758, 308.15

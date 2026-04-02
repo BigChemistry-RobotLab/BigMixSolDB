@@ -1,0 +1,219 @@
+- compound: Satranidazole
+  synonyms: SAT
+  entries:
+  - solv: methanol
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 4.815 $\times 10^{-4}$, 293.2
+    - 5.387 $\times 10^{-4}$, 298.2
+    - 6.244 $\times 10^{-4}$, 303.2
+    - 7.394 $\times 10^{-4}$, 308.2
+    - 8.707 $\times 10^{-4}$, 313.2
+  - solv: ethanol
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 3.782 $\times 10^{-4}$, 293.2
+    - 4.795 $\times 10^{-4}$, 298.2
+    - 5.822 $\times 10^{-4}$, 303.2
+    - 7.263 $\times 10^{-4}$, 308.2
+    - 8.514 $\times 10^{-4}$, 313.2
+  - solv: 1-propanol
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 3.563 $\times 10^{-4}$, 293.2
+    - 4.355 $\times 10^{-4}$, 298.2
+    - 5.408 $\times 10^{-4}$, 303.2
+    - 6.729 $\times 10^{-4}$, 308.2
+    - 8.321 $\times 10^{-4}$, 313.2
+  - solv: 2-propanol
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 3.150 $\times 10^{-4}$, 293.2
+    - 3.679 $\times 10^{-4}$, 298.2
+    - 4.471 $\times 10^{-4}$, 303.2
+    - 5.266 $\times 10^{-4}$, 308.2
+    - 6.592 $\times 10^{-4}$, 313.2
+  - solv: formamide
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 4.756 $\times 10^{-2}$, 293.2
+    - 5.913 $\times 10^{-2}$, 298.2
+    - 7.712 $\times 10^{-2}$, 303.2
+    - 9.377 $\times 10^{-2}$, 308.2
+    - 1.086 $\times 10^{-1}$, 313.2
+  - solv: 1,4-dioxane
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 8.140 $\times 10^{-3}$, 293.2
+    - 1.057 $\times 10^{-2}$, 298.2
+    - 1.268 $\times 10^{-2}$, 303.2
+    - 1.582 $\times 10^{-2}$, 308.2
+    - 1.892 $\times 10^{-2}$, 313.2
+  - solv: N,N-dimethyl formamide
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 4.062 $\times 10^{-2}$, 293.2
+    - 5.424 $\times 10^{-2}$, 298.2
+    - 6.833 $\times 10^{-2}$, 303.2
+    - 8.299 $\times 10^{-2}$, 308.2
+    - 1.029 $\times 10^{-1}$, 313.2
+  - solv: N,N-dimethyl acetamide
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 3.634 $\times 10^{-2}$, 293.2
+    - 4.811 $\times 10^{-2}$, 298.2
+    - 6.169 $\times 10^{-2}$, 303.2
+    - 7.653 $\times 10^{-2}$, 308.2
+    - 9.634 $\times 10^{-2}$, 313.2
+  - solv: dimethyl sulfoxide
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 5.703 $\times 10^{-2}$, 293.2
+    - 7.017 $\times 10^{-2}$, 298.2
+    - 8.501 $\times 10^{-2}$, 303.2
+    - 9.866 $\times 10^{-2}$, 308.2
+    - 1.137 $\times 10^{-1}$, 313.2
+  - solv: N-methyl-2-pyrrolidone
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 7.963 $\times 10^{-2}$, 293.2
+    - 1.156 $\times 10^{-1}$, 298.2
+    - 1.813 $\times 10^{-1}$, 303.2
+    - 2.621 $\times 10^{-1}$, 308.2
+    - 3.660 $\times 10^{-1}$, 313.2
+  - solv: ethylene glycol
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 8.792 $\times 10^{-4}$, 293.2
+    - 1.492 $\times 10^{-3}$, 298.2
+    - 2.276 $\times 10^{-3}$, 303.2
+    - 3.578 $\times 10^{-3}$, 308.2
+    - 5.578 $\times 10^{-3}$, 313.2
+  - solv: propylene glycol
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 1.361 $\times 10^{-3}$, 293.2
+    - 2.316 $\times 10^{-3}$, 298.2
+    - 3.469 $\times 10^{-3}$, 303.2
+    - 5.382 $\times 10^{-3}$, 308.2
+    - 8.357 $\times 10^{-3}$, 313.2
+  - solv: 1,4-butanediol
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 9.391 $\times 10^{-4}$, 293.2
+    - 1.323 $\times 10^{-3}$, 298.2
+    - 1.765 $\times 10^{-3}$, 303.2
+    - 2.396 $\times 10^{-3}$, 308.2
+    - 3.148 $\times 10^{-3}$, 313.2
+  - solv: glycerin
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 7.426 $\times 10^{-4}$, 293.2
+    - 8.607 $\times 10^{-4}$, 298.2
+    - 9.841 $\times 10^{-4}$, 303.2
+    - 1.143 $\times 10^{-3}$, 308.2
+    - 1.282 $\times 10^{-3}$, 313.2
+  - solv: polyethylene glycol-200
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 8.288 $\times 10^{-3}$, 293.2
+    - 1.098 $\times 10^{-2}$, 298.2
+    - 1.529 $\times 10^{-2}$, 303.2
+    - 2.047 $\times 10^{-2}$, 308.2
+    - 2.708 $\times 10^{-2}$, 313.2
+  - solv: polyethylene glycol-400
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 1.229 $\times 10^{-2}$, 293.2
+    - 1.765 $\times 10^{-2}$, 298.2
+    - 2.469 $\times 10^{-2}$, 303.2
+    - 3.434 $\times 10^{-2}$, 308.2
+    - 4.620 $\times 10^{-2}$, 313.2
+  - solv: polyethylene glycol-600
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 1.502 $\times 10^{-2}$, 293.2
+    - 2.183 $\times 10^{-2}$, 298.2
+    - 3.020 $\times 10^{-2}$, 303.2
+    - 4.291 $\times 10^{-2}$, 308.2
+    - 5.802 $\times 10^{-2}$, 313.2
+  - solv: water
+    su: $x$
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - 2.858 $\times 10^{-6}$, 293.2
+    - 3.207 $\times 10^{-6}$, 298.2
+    - 3.662 $\times 10^{-6}$, 303.2
+    - 4.239 $\times 10^{-6}$, 308.2
+    - 5.063 $\times 10^{-6}$, 313.2

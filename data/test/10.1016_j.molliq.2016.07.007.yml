@@ -1,0 +1,135 @@
+- compound: Sinapic acid
+  synonyms: SA
+  entries:
+  - solv: Water
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $6.22 \times 10^{-5}$, 298.15
+    - $8.11 \times 10^{-5}$, 303.15
+    - $1.13 \times 10^{-4}$, 308.15
+    - $1.46 \times 10^{-4}$, 313.15
+    - $1.88 \times 10^{-4}$, 318.15
+  - solv: Ethanol
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $1.20 \times 10^{-2}$, 298.15
+    - $1.30 \times 10^{-2}$, 303.15
+    - $1.41 \times 10^{-2}$, 308.15
+    - $1.52 \times 10^{-2}$, 313.15
+    - $1.64 \times 10^{-2}$, 318.15
+  - solv: Isopropanol
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $2.13 \times 10^{-3}$, 298.15
+    - $2.22 \times 10^{-3}$, 303.15
+    - $2.34 \times 10^{-3}$, 308.15
+    - $2.45 \times 10^{-3}$, 313.15
+    - $2.57 \times 10^{-3}$, 318.15
+  - solv: Ethylene glycol
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $5.90 \times 10^{-3}$, 298.15
+    - $6.63 \times 10^{-3}$, 303.15
+    - $7.48 \times 10^{-3}$, 308.15
+    - $8.43 \times 10^{-3}$, 313.15
+    - $9.34 \times 10^{-3}$, 318.15
+  - solv: Propylene glycol
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $4.52 \times 10^{-3}$, 298.15
+    - $5.30 \times 10^{-3}$, 303.15
+    - $6.07 \times 10^{-3}$, 308.15
+    - $7.08 \times 10^{-3}$, 313.15
+    - $8.11 \times 10^{-3}$, 318.15
+  - solv: Polyethylene glycol-400
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $5.58 \times 10^{-2}$, 298.15
+    - $6.16 \times 10^{-2}$, 303.15
+    - $6.81 \times 10^{-2}$, 308.15
+    - $7.48 \times 10^{-2}$, 313.15
+    - $8.34 \times 10^{-2}$, 318.15
+  - solv: Transcutol
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $2.98 \times 10^{-2}$, 298.15
+    - $3.24 \times 10^{-2}$, 303.15
+    - $3.53 \times 10^{-2}$, 308.15
+    - $3.83 \times 10^{-2}$, 313.15
+    - $4.12 \times 10^{-2}$, 318.15
+  - solv: 1-butanol
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $3.55 \times 10^{-3}$, 298.15
+    - $4.29 \times 10^{-3}$, 303.15
+    - $5.29 \times 10^{-3}$, 308.15
+    - $6.31 \times 10^{-3}$, 313.15
+    - $7.29 \times 10^{-3}$, 318.15
+  - solv: 2-butanol
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $4.09 \times 10^{-3}$, 298.15
+    - $4.86 \times 10^{-3}$, 303.15
+    - $5.59 \times 10^{-3}$, 308.15
+    - $6.63 \times 10^{-3}$, 313.15
+    - $7.61 \times 10^{-2}$, 318.15
+  - solv: Ethyl Acetate
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $5.32 \times 10^{-2}$, 298.15
+    - $6.27 \times 10^{-2}$, 303.15
+    - $7.64 \times 10^{-2}$, 308.15
+    - $9.35 \times 10^{-2}$, 313.15
+    - $1.09 \times 10^{-2}$, 318.15
+  - solv: Dimethyl Sulfoxide
+    su: x
+    tu: K
+    pres: 0.1
+    pu: MPa
+    data:
+    - sol, temp
+    - $1.48 \times 10^{-1}$, 298.15
+    - $1.50 \times 10^{-1}$, 303.15
+    - $1.53 \times 10^{-1}$, 308.15
+    - $1.56 \times 10^{-1}$, 313.15
+    - $1.59 \times 10^{-1}$, 318.15

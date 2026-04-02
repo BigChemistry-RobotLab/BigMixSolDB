@@ -1,0 +1,14 @@
+- compound: Hexamethylene tetramine
+  synonyms: "[(CH2)6N4] | HMT"
+  entries:
+    - solv: Ethanol
+      su: g/100 g solution
+      tu: C
+      note: Water Content, 0.04 Vol %
+      data:
+        - sol, temp
+        - 2.606, 15.04
+        - 2.941, 20.34
+        - 3.298, 25.28
+        - 3.696, 30.25
+        - 4.569, 39.76

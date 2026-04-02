@@ -1,0 +1,202 @@
+- compound: Helium
+  synonyms: He
+  entries:
+    - su: $10^{4} x$
+      temp: 298.15
+      tu: K
+      pres: 101325
+      pu: Pa
+      data:
+        - solv, sol
+        - Methanol, 0.575
+        - Ethanol, 0.727
+        - 1-Propanol, 0.849
+        - 1-Butanol, 0.966
+        - 1-Pentanol, 1.030
+        - 1-Hexanol, 1.099
+        - 1-Heptanol, 1.140
+        - 1-Octanol, 1.224
+        - 1-Nonanol, 1.292
+        - 1-Decanol, 1.396
+        - 1-Undecanol, 1.490
+- compound: Neon
+  synonyms: Ne
+  entries:
+    - su: $10^{4} x$
+      temp: 298.15
+      tu: K
+      pres: 101325
+      pu: Pa
+      data:
+        - solv, sol
+        - Methanol, 0.789
+        - Ethanol, 1.036
+        - 1-Propanol, 1.177
+        - 1-Butanol, 1.323
+        - 1-Pentanol, 1.433
+        - 1-Hexanol, 1.535
+        - 1-Heptanol, 1.660
+        - 1-Octanol, 1.741
+        - 1-Nonanol, 1.818
+        - 1-Decanol, 1.936
+        - 1-Undecanol, 1.958
+- compound: Argon
+  synonyms: Ar
+  entries:
+    - su: $10^{4} x$
+      temp: 298.15
+      tu: K
+      pres: 101325
+      pu: Pa
+      data:
+        - solv, sol
+        - Ethanol, 6.327
+        - 1-Propanol, 7.558
+        - 1-Butanol, 9.041
+        - 1-Pentanol, 10.08
+        - 1-Hexanol, 11.15
+        - 1-Heptanol, 11.97
+        - 1-Octanol, 12.89
+        - 1-Nonanol, 13.73
+        - 1-Decanol, 14.64
+        - 1-Undecanol, 15.14
+- compound: Krypton
+  synonyms: Kr
+  entries:
+    - su: $10^{4} x$
+      temp: 298.15
+      tu: K
+      pres: 101325
+      pu: Pa
+      data:
+        - solv, sol
+        - Methanol, 10.73
+        - Ethanol, 16.55
+        - 1-Propanol, 21.32
+        - 1-Butanol, 25.31
+        - 1-Pentanol, 28.68
+        - 1-Hexanol, 32.34
+        - 1-Heptanol, 34.98
+        - 1-Octanol, 37.63
+        - 1-Nonanol, 41.48
+        - 1-Decanol, 42.55
+        - 1-Undecanol, 45.14
+- compound: Xenon
+  synonyms: Xe
+  entries:
+    - su: $10^{4} x$
+      temp: 298.15
+      tu: K
+      pres: 101325
+      pu: Pa
+      data:
+        - solv, sol
+        - 1-Propanol, 73.30
+        - 1-Butanol, 96.21
+        - 1-Pentanol, 107.9
+        - 1-Hexanol, 123.6
+        - 1-Heptanol, 138.0
+- compound: Nitrogen
+  synonyms: N2
+  entries:
+    - su: $10^{4} x$
+      temp: 298.15
+      tu: K
+      pres: 101325
+      pu: Pa
+      data:
+        - solv, sol
+        - Methanol, 2.566
+        - Ethanol, 3.506
+        - 1-Propanol, 4.078
+        - 1-Butanol, 4.595
+        - 1-Pentanol, 5.126
+        - 1-Hexanol, 5.684
+        - 1-Heptanol, 6.050
+        - 1-Octanol, 6.142
+        - 1-Nonanol, 6.481
+        - 1-Decanol, 6.703
+        - 1-Undecanol, 7.242
+- compound: Oxygen
+  synonyms: O2
+  entries:
+    - su: $10^{4} x$
+      temp: 298.15
+      tu: K
+      pres: 101325
+      pu: Pa
+      data:
+        - solv, sol
+        - Ethanol, 5.794
+        - 1-Propanol, 6.741
+        - 1-Butanol, 7.970
+        - 1-Pentanol, 8.806
+        - 1-Hexanol, 9.752
+        - 1-Heptanol, 10.42
+        - 1-Octanol, 11.06
+        - 1-Nonanol, 11.85
+        - 1-Decanol, 12.36
+        - 1-Undecanol, 13.14
+- compound: Methane
+  synonyms: CH4
+  entries:
+    - su: $10^{4} x$
+      temp: 298.15
+      tu: K
+      pres: 101325
+      pu: Pa
+      data:
+        - solv, sol
+        - Methanol, 8.404
+        - Ethanol, 12.20
+        - 1-Propanol, 15.85
+        - 1-Butanol, 18.53
+        - 1-Pentanol, 20.94
+        - 1-Hexanol, 23.13
+        - 1-Heptanol, 25.73
+        - 1-Octanol, 27.18
+        - 1-Nonanol, 29.23
+        - 1-Decanol, 30.58
+        - 1-Undecanol, 32.93
+- compound: Carbon tetrafluoride
+  synonyms: CF4
+  entries:
+    - su: $10^{4} x$
+      temp: 298.15
+      tu: K
+      pres: 101325
+      pu: Pa
+      data:
+        - solv, sol
+        - Methanol, 3.110
+        - Ethanol, 4.620
+        - 1-Propanol, 5.338
+        - 1-Butanol, 5.962
+        - 1-Pentanol, 6.245
+        - 1-Hexanol, 6.696
+        - 1-Heptanol, 7.083
+        - 1-Octanol, 7.375
+        - 1-Nonanol, 7.741
+        - 1-Decanol, 7.961
+        - 1-Undecanol, 8.199
+- compound: Sulfur hexafluoride
+  synonyms: SF6
+  entries:
+    - su: $10^{4} x$
+      temp: 298.15
+      tu: K
+      pres: 101325
+      pu: Pa
+      data:
+        - solv, sol
+        - Methanol, 10.44
+        - Ethanol, 18.24
+        - 1-Propanol, 22.94
+        - 1-Butanol, 25.76
+        - 1-Pentanol, 27.75
+        - 1-Hexanol, 29.11
+        - 1-Heptanol, 31.42
+        - 1-Octanol, 32.91
+        - 1-Nonanol, 34.75
+        - 1-Decanol, 35.77
+        - 1-Undecanol, 37.30

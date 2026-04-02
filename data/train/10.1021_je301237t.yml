@@ -1,0 +1,102 @@
+- compound: Octahydro-1,3,5,7-tetranitro-1,3,5,7-tetrazocine
+  synonyms: TAT
+  entries:
+    - solv: ethyl acetate
+      su: $10^{3} x$
+      tu: K
+      pres: 0.1
+      pu: MPa
+      data:
+        - sol, temp
+        - 1.32, 298
+        - 1.51, 303
+        - 1.69, 308
+        - 1.91, 313
+        - 2.16, 318
+    - solv: methanol
+      su: $10^{3} x$
+      tu: K
+      pres: 0.1
+      pu: MPa
+      data:
+        - sol, temp
+        - 8.23, 298
+        - 10.62, 303
+        - 13.22, 308
+        - 17.62, 313
+        - 22.32, 318
+    - solv: water
+      su: $10^{3} x$
+      tu: K
+      pres: 0.1
+      pu: MPa
+      data:
+        - sol, temp
+        - 5.57, 298
+        - 8.03, 303
+        - 11.41, 308
+        - 16.72, 313
+        - 22.54, 318
+    - solv: acetonitrile
+      su: $10^{3} x$
+      tu: K
+      pres: 0.1
+      pu: MPa
+      data:
+        - sol, temp
+        - 12.58, 298
+        - 14.22, 303
+        - 16.82, 308
+        - 19.64, 313
+        - 23.51, 318
+- compound: 1,3,5-Triacetyl-hexahydro-s-triazine
+  synonyms: TRAT
+  entries:
+    - solv: ethyl acetate
+      su: $10^{3} x$
+      tu: K
+      pres: 0.1
+      pu: MPa
+      data:
+        - sol, temp
+        - 15.30, 298
+        - 17.80, 303
+        - 19.81, 308
+        - 23.62, 313
+        - 27.05, 318
+    - solv: methanol
+      su: $10^{3} x$
+      tu: K
+      pres: 0.1
+      pu: MPa
+      data:
+        - sol, temp
+        - 204.33, 298
+        - 237.93, 303
+        - 282.82, 308
+        - 335.46, 313
+        - 394.51, 318
+    - solv: water
+      su: $10^{3} x$
+      tu: K
+      pres: 0.1
+      pu: MPa
+      data:
+        - sol, temp
+        - 4.34, 298
+        - 6.12, 303
+        - 8.50, 308
+        - 12.52, 313
+        - 17.95, 318
+    - solv: acetonitrile
+      su: $10^{3} x$
+      tu: K
+      pres: 0.1
+      pu: MPa
+      data:
+        - sol, temp
+        - 47.83, 298
+        - 69.52, 303
+        - 101.72, 308
+        - 142.27, 313
+        - 201.79, 318

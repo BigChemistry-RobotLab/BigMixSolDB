@@ -1,0 +1,75 @@
+- compound: Tobramycin
+  synonyms: Tobramycin monohydrate | 4-O-(3-amino-3-deoxy-a-D-glucopyranosyl)-2-deoxy-6-O-(2,6-diamino-2,3,6-trideoxy-a-D-ribohexopyranosyl)-L-streptamine
+  entries:
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 288.2
+      tu: K
+      data:
+        - c1, sol
+        - 0.1601, 0.09109
+        - 0.3202, 0.69955
+        - 0.4800, 2.85495
+        - 0.6399, 8.54077
+        - 0.7998, 18.75936
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 296.2
+      tu: K
+      data:
+        - c1, sol
+        - 0.1601, 0.12000
+        - 0.3202, 0.78346
+        - 0.4800, 2.87880
+        - 0.6399, 9.39686
+        - 0.7998, 20.96041
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 304.2
+      tu: K
+      data:
+        - c1, sol
+        - 0.1601, 0.15187
+        - 0.3202, 1.08096
+        - 0.4800, 3.40757
+        - 0.6399, 11.68394
+        - 0.7998, 24.08791
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 312.2
+      tu: K
+      data:
+        - c1, sol
+        - 0.1601, 0.17240
+        - 0.3202, 1.23287
+        - 0.4800, 5.02377
+        - 0.6399, 15.40804
+        - 0.7998, 29.79806
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 320.2
+      tu: K
+      data:
+        - c1, sol
+        - 0.1601, 0.20430
+        - 0.3202, 1.60227
+        - 0.4800, 6.58380
+        - 0.6399, 17.90186
+        - 0.7998, 34.67695
+    - solv: Ethanol | Water
+      cu: mole fraction
+      su: $10^{3} x$
+      temp: 328.2
+      tu: K
+      data:
+        - c1, sol
+        - 0.1601, 0.2431
+        - 0.3202, 2.01789
+        - 0.4800, 9.062777
+        - 0.6399, 21.88315
+        - 0.7998, 40.81464

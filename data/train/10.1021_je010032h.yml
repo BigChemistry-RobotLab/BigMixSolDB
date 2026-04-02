@@ -1,0 +1,30 @@
+- compound: Docosane
+  synonyms: n-alkane C22
+  entries:
+    - solv: Heptane
+      su: mole fraction
+      tu: K
+      data:
+        - sol, temp
+        - 0.0225, 277.25
+        - 0.0440, 283.15
+        - 0.0647, 286.25
+        - 0.0844, 289.3
+        - 0.1033, 290.95
+        - 0.1556, 295.35
+        - 0.1873, 297.35
+        - 0.2166, 298.75
+        - 0.2694, 301.45
+        - 0.2932, 302.35
+        - 0.3561, 304.75
+        - 0.3922, 305.55
+        - 0.4668, 307.65
+    - solv: Heptane
+      su: mole fraction
+      tu: K
+      note: Ultrasound measurements
+      data:
+        - sol, temp
+        - 0.0225, 277.25
+        - 0.1873, 297.4
+        - 0.4668, 307.6

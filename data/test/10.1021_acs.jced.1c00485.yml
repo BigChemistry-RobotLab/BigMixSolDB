@@ -1,0 +1,146 @@
+- compound: L-Homophenylalanine ethyl ester hydrochloride
+  entries:
+  - solv: Ethanol
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 3.1, 283.15
+    - 3.932, 293.15
+    - 5.048, 303.15
+    - 6.658, 313.15
+    - 8.67, 323.15
+  - solv: $n$-Propanol
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 1.897, 283.15
+    - 2.616, 293.15
+    - 3.528, 303.15
+    - 4.874, 313.15
+    - 6.789, 323.15
+  - solv: $i$-Propanol
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 0.726, 283.15
+    - 0.96, 293.15
+    - 1.349, 303.15
+    - 1.922, 313.15
+    - 2.857, 323.15
+  - solv: $n$-Butanol
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 1.278, 283.15
+    - 1.631, 293.15
+    - 2.197, 303.15
+    - 2.525, 313.15
+    - 2.772, 323.15
+  - solv: $i$-Butanol
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 1.007, 283.15
+    - 1.395, 293.15
+    - 2.025, 303.15
+    - 3.108, 313.15
+    - 4.723, 323.15
+  - solv: $s$-Butanol
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 0.416, 283.15
+    - 0.614, 293.15
+    - 0.846, 303.15
+    - 1.301, 313.15
+    - 2.566, 323.15
+  - solv: $n$-Pentanol
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 1.61, 283.15
+    - 2.149, 293.15
+    - 2.943, 303.15
+    - 4.27, 313.15
+    - 5.954, 323.15
+  - solv: Acetone
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 0.068, 283.15
+    - 0.117, 293.15
+    - 0.182, 303.15
+    - 0.297, 313.15
+    - 0.505, 323.15
+  - solv: 1,4-Dioxane
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 0.221, 288.15
+    - 0.266, 293.15
+    - 0.381, 303.15
+    - 0.845, 313.15
+    - 1.424, 323.15
+  - solv: 2-Butanone
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 0.022, 283.15
+    - 0.031, 293.15
+    - 0.04, 303.15
+    - 0.073, 313.15
+    - 0.13, 323.15
+  - solv: Dichloromethane
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 1.724, 283.15
+    - 2.326, 288.15
+    - 3.029, 293.15
+    - 3.856, 298.15
+    - 4.889, 303.15
+  - solv: Methyl acetate
+    su: $10^{2} \cdot x$
+    tu: K
+    pres: 98.8
+    pu: kPa
+    data:
+    - sol, temp
+    - 0.004, 283.15
+    - 0.005, 293.15
+    - 0.012, 303.15
+    - 0.024, 313.15
+    - 0.034, 323.15
