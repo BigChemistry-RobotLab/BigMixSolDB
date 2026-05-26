@@ -56,6 +56,31 @@ def canonicalize_smiles(value: Any) -> str | None:
     return _canonicalize_smiles_text(text)
 
 
+def _required_reference_smiles(
+    row: pd.Series,
+    fields: tuple[str, ...],
+) -> tuple[dict[str, str], dict[str, Any] | None]:
+    smiles_by_field: dict[str, str] = {}
+    missing_fields: list[str] = []
+    raw_values: dict[str, str | None] = {}
+
+    for field in fields:
+        raw_values[field] = clean_text(row.get(field))
+        smiles = canonicalize_smiles(row.get(field))
+        if smiles is None:
+            missing_fields.append(field)
+        else:
+            smiles_by_field[field] = smiles
+
+    if missing_fields:
+        return smiles_by_field, {
+            "reason": "missing_reference_smiles",
+            "missing_smiles_fields": missing_fields,
+            "raw_smiles_values": {field: raw_values[field] for field in missing_fields},
+        }
+    return smiles_by_field, None
+
+
 @lru_cache(maxsize=50_000)
 def _smiles_to_inchi(text: str) -> str | None:
     try:
@@ -321,9 +346,6 @@ def load_mixturesoldb_records(path: str | Path) -> tuple[list[Record], list[dict
             excluded.append({"row_index": row_index, "reason": "missing_required_fields", "doi": doi})
             continue
 
-        solute_smiles = canonicalize_smiles(row.get("SMILES_Solute"))
-        solvent1_smiles = canonicalize_smiles(row.get("SMILES_Solvent1"))
-        solvent2_smiles = canonicalize_smiles(row.get("SMILES_Solvent2"))
         measurements: list[tuple[str, float]] = []
         sol_mole = round_or_none(row.get("Solubility(mole_fraction)"), ROUND_SOLUBILITY)
         if sol_mole is not None:
@@ -337,18 +359,33 @@ def load_mixturesoldb_records(path: str | Path) -> tuple[list[Record], list[dict
 
         fraction_value = round(float(fraction_solvent1), ROUND_FRACTION)
         if abs(fraction_value - 1.0) <= EPS:
+            required_smiles = ("SMILES_Solute", "SMILES_Solvent1")
+            smiles_by_field, smiles_exclusion = _required_reference_smiles(row, required_smiles)
+            if smiles_exclusion is not None:
+                excluded.append({"row_index": row_index, "doi": doi, **smiles_exclusion})
+                continue
             mode = "single"
             solvent_name = clean_text(row.get("Solvent1"))
-            solvent_smiles = solvent1_smiles
+            solvent_smiles = smiles_by_field["SMILES_Solvent1"]
             active_fraction_type = None
             active_fraction_solvent1 = None
         elif abs(fraction_value) <= EPS:
+            required_smiles = ("SMILES_Solute", "SMILES_Solvent2")
+            smiles_by_field, smiles_exclusion = _required_reference_smiles(row, required_smiles)
+            if smiles_exclusion is not None:
+                excluded.append({"row_index": row_index, "doi": doi, **smiles_exclusion})
+                continue
             mode = "single"
             solvent_name = clean_text(row.get("Solvent2"))
-            solvent_smiles = solvent2_smiles
+            solvent_smiles = smiles_by_field["SMILES_Solvent2"]
             active_fraction_type = None
             active_fraction_solvent1 = None
         else:
+            required_smiles = ("SMILES_Solute", "SMILES_Solvent1", "SMILES_Solvent2")
+            smiles_by_field, smiles_exclusion = _required_reference_smiles(row, required_smiles)
+            if smiles_exclusion is not None:
+                excluded.append({"row_index": row_index, "doi": doi, **smiles_exclusion})
+                continue
             mode = "binary"
             solvent_name = None
             solvent_smiles = None
@@ -372,7 +409,7 @@ def load_mixturesoldb_records(path: str | Path) -> tuple[list[Record], list[dict
                         fraction_type=None,
                         fraction_solvent1=None,
                         compound_name=clean_text(row.get("Compound_Name")),
-                        solute_smiles=solute_smiles,
+                        solute_smiles=smiles_by_field["SMILES_Solute"],
                         solvent1_name=solvent_name,
                         solvent2_name=None,
                         solvent1_smiles=solvent_smiles,
@@ -392,11 +429,11 @@ def load_mixturesoldb_records(path: str | Path) -> tuple[list[Record], list[dict
                         fraction_type=active_fraction_type,
                         fraction_solvent1=active_fraction_solvent1,
                         compound_name=clean_text(row.get("Compound_Name")),
-                        solute_smiles=solute_smiles,
+                        solute_smiles=smiles_by_field["SMILES_Solute"],
                         solvent1_name=clean_text(row.get("Solvent1")),
                         solvent2_name=clean_text(row.get("Solvent2")),
-                        solvent1_smiles=solvent1_smiles,
-                        solvent2_smiles=solvent2_smiles,
+                        solvent1_smiles=smiles_by_field["SMILES_Solvent1"],
+                        solvent2_smiles=smiles_by_field["SMILES_Solvent2"],
                     )
                 )
     return records, excluded
@@ -413,6 +450,10 @@ def load_bigsoldb_records(path: str | Path) -> tuple[list[Record], list[dict[str
         if not doi or temperature is None or solubility is None:
             excluded.append({"row_index": row_index, "reason": "missing_required_fields", "doi": doi})
             continue
+        smiles_by_field, smiles_exclusion = _required_reference_smiles(row, ("SMILES_Solute", "SMILES_Solvent"))
+        if smiles_exclusion is not None:
+            excluded.append({"row_index": row_index, "doi": doi, **smiles_exclusion})
+            continue
         records.append(
             Record(
                 dataset="bigsoldb",
@@ -425,10 +466,10 @@ def load_bigsoldb_records(path: str | Path) -> tuple[list[Record], list[dict[str
                 fraction_type=None,
                 fraction_solvent1=None,
                 compound_name=clean_text(row.get("Compound_Name")),
-                solute_smiles=canonicalize_smiles(row.get("SMILES_Solute")),
+                solute_smiles=smiles_by_field["SMILES_Solute"],
                 solvent1_name=clean_text(row.get("Solvent")),
                 solvent2_name=None,
-                solvent1_smiles=canonicalize_smiles(row.get("SMILES_Solvent")),
+                solvent1_smiles=smiles_by_field["SMILES_Solvent"],
                 solvent2_smiles=None,
             )
         )
@@ -584,7 +625,28 @@ def pair_by_metric_signature(predicted: list[Record], reference: list[Record]) -
     return paired, left_unpaired, right_unpaired
 
 
-def build_difference_fields(predicted: Record, reference: Record) -> dict[str, dict[str, Any]]:
+def _json_value(value: Any) -> Any:
+    if isinstance(value, tuple):
+        return list(value)
+    return value
+
+
+def _value_difference(left: Any, reference: Any, left_label: str) -> dict[str, Any]:
+    difference = {
+        left_label: _json_value(left),
+        "reference": _json_value(reference),
+    }
+    if isinstance(left, (int, float)) and isinstance(reference, (int, float)):
+        difference["delta"] = round(float(left) - float(reference), ROUND_SOLUBILITY)
+    return difference
+
+
+def _measurement_difference_fields(
+    predicted: Record,
+    reference: Record,
+    *,
+    left_label: str,
+) -> dict[str, dict[str, Any]]:
     comparable = {
         "mode": (predicted.mode, reference.mode),
         "metric": (predicted.metric, reference.metric),
@@ -596,29 +658,333 @@ def build_difference_fields(predicted: Record, reference: Record) -> dict[str, d
     differences: dict[str, dict[str, Any]] = {}
     for field, (predicted_value, reference_value) in comparable.items():
         if predicted_value != reference_value:
-            differences[field] = {
-                "predicted": predicted_value,
-                "reference": reference_value,
-            }
+            differences[field] = _value_difference(predicted_value, reference_value, left_label)
     return differences
 
 
-def compare_record_sets(predicted: list[Record], reference: list[Record]) -> dict[str, Any]:
+def build_difference_fields(predicted: Record, reference: Record) -> dict[str, dict[str, Any]]:
+    return _measurement_difference_fields(predicted, reference, left_label="predicted")
+
+
+def _entity_summary(name: str | None, smiles: str | None) -> dict[str, Any]:
+    return {
+        "name": name,
+        "smiles": smiles,
+        "inchikey": smiles_to_inchikey(smiles) if smiles else None,
+    }
+
+
+def _entity_comparison_key(name: str | None, smiles: str | None) -> str | None:
+    inchikey = smiles_to_inchikey(smiles) if smiles else None
+    if inchikey:
+        return f"inchikey:{inchikey}"
+    normalized_name = normalize_name_key(name)
+    if normalized_name:
+        return f"name:{normalized_name}"
+    return None
+
+
+def _record_solvent_entries(record: Record) -> list[dict[str, Any]]:
+    if record.mode == "single":
+        entries = [
+            {
+                "slot": 1,
+                "fraction": 1.0,
+                **_entity_summary(record.solvent1_name, record.solvent1_smiles),
+            }
+        ]
+    elif record.mode == "binary":
+        fraction_value = (
+            record.fraction_solvent1_raw
+            if record.fraction_solvent1_raw is not None
+            else record.fraction_solvent1
+        )
+        if fraction_value is None:
+            fraction1 = None
+            fraction2 = None
+        else:
+            fraction1 = round(float(fraction_value), ROUND_FRACTION)
+            fraction2 = round(1.0 - float(fraction_value), ROUND_FRACTION)
+        entries = [
+            {
+                "slot": 1,
+                "fraction": fraction1,
+                **_entity_summary(record.solvent1_name, record.solvent1_smiles),
+            },
+            {
+                "slot": 2,
+                "fraction": fraction2,
+                **_entity_summary(record.solvent2_name, record.solvent2_smiles),
+            },
+        ]
+    else:
+        entries = []
+
+    return sorted(
+        entries,
+        key=lambda entry: (
+            entry.get("inchikey") or normalize_name_key(entry.get("name")) or "",
+            entry.get("fraction") if entry.get("fraction") is not None else -1.0,
+            entry.get("slot") or 0,
+        ),
+    )
+
+
+def _record_solvent_comparison_key(record: Record) -> tuple[Any, ...]:
+    entries = _record_solvent_entries(record)
+    return tuple(
+        (
+            entry.get("inchikey") or normalize_name_key(entry.get("name")),
+            entry.get("fraction"),
+        )
+        for entry in entries
+    )
+
+
+def _identity_difference_fields(
+    predicted: Record,
+    reference: Record,
+    *,
+    left_label: str,
+) -> dict[str, dict[str, Any]]:
+    differences: dict[str, dict[str, Any]] = {}
+    predicted_solute_key = _entity_comparison_key(predicted.compound_name, predicted.solute_smiles)
+    reference_solute_key = _entity_comparison_key(reference.compound_name, reference.solute_smiles)
+    if predicted_solute_key != reference_solute_key:
+        differences["solute"] = {
+            left_label: _entity_summary(predicted.compound_name, predicted.solute_smiles),
+            "reference": _entity_summary(reference.compound_name, reference.solute_smiles),
+        }
+
+    if _record_solvent_comparison_key(predicted) != _record_solvent_comparison_key(reference):
+        differences["solvents"] = {
+            left_label: _record_solvent_entries(predicted),
+            "reference": _record_solvent_entries(reference),
+        }
+    return differences
+
+
+def build_record_difference_fields(
+    predicted: Record,
+    reference: Record,
+    *,
+    left_label: str = "input",
+    include_identity: bool = True,
+) -> dict[str, dict[str, Any]]:
+    differences = _measurement_difference_fields(predicted, reference, left_label=left_label)
+    if include_identity:
+        differences.update(_identity_difference_fields(predicted, reference, left_label=left_label))
+    return differences
+
+
+def _record_brief(record: Record) -> dict[str, Any]:
+    return {
+        "row_index": record.row_index,
+        "dataset": record.dataset,
+        "mode": record.mode,
+        "metric": record.metric,
+        "temperature": record.temperature,
+        "solubility": record.solubility,
+        "fraction_type": record.fraction_type,
+        "composition": record_composition(record),
+        "solute": _entity_summary(record.compound_name, record.solute_smiles),
+        "solvents": _record_solvent_entries(record),
+    }
+
+
+def _paired_difference_report(
+    predicted: Record,
+    reference: Record,
+    *,
+    match_basis: str,
+    include_identity: bool = True,
+) -> dict[str, Any] | None:
+    differences = build_record_difference_fields(
+        predicted,
+        reference,
+        left_label="input",
+        include_identity=include_identity,
+    )
+    if not differences:
+        return None
+    return {
+        "input_row_index": predicted.row_index,
+        "reference_row_index": reference.row_index,
+        "match_basis": match_basis,
+        "differences": differences,
+    }
+
+
+def _record_occurrence_key(record: Record) -> tuple[Any, ...]:
+    return (record.dataset, record.row_index, _record_identity(record))
+
+
+def _pair_occurrence_key(predicted: Record, reference: Record) -> tuple[Any, ...]:
+    return (_record_occurrence_key(predicted), _record_occurrence_key(reference))
+
+
+def _records_by_doi(records: list[Record]) -> dict[str, list[Record]]:
+    grouped: dict[str, list[Record]] = defaultdict(list)
+    for record in records:
+        if record.doi:
+            grouped[record.doi].append(record)
+    return grouped
+
+
+def _exclusions_by_doi(excluded: list[dict[str, Any]] | None) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for item in excluded or []:
+        doi = str(item.get("doi") or "")
+        if doi:
+            grouped[doi].append(item)
+    return grouped
+
+
+def _records_with_dois(records: list[Record], dois: set[str]) -> list[Record]:
+    return [record for record in records if record.doi in dois]
+
+
+def _exclusions_with_dois(excluded: list[dict[str, Any]], dois: set[str]) -> list[dict[str, Any]]:
+    return [item for item in excluded if str(item.get("doi") or "") in dois]
+
+
+def _build_doi_match_pass_reports(
+    predicted_records: list[Record],
+    reference_records: list[Record],
+    pairs: list[tuple[Record, Record]],
+    predicted_unmatched: list[Record],
+    reference_unmatched: list[Record],
+) -> dict[str, dict[str, Any]]:
+    predicted_by_doi = _records_by_doi(predicted_records)
+    reference_by_doi = _records_by_doi(reference_records)
+    pair_counts = Counter(predicted_record.doi for predicted_record, _ in pairs if predicted_record.doi)
+    predicted_unmatched_by_doi = _records_by_doi(predicted_unmatched)
+    reference_unmatched_by_doi = _records_by_doi(reference_unmatched)
+    dois = sorted(set(predicted_by_doi) | set(reference_by_doi))
+
+    reports: dict[str, dict[str, Any]] = {}
+    for doi in dois:
+        input_only = sorted(predicted_unmatched_by_doi.get(doi, []), key=lambda record: record.row_index)
+        reference_only = sorted(
+            reference_unmatched_by_doi.get(doi, []),
+            key=lambda record: record.row_index,
+        )
+        reports[doi] = {
+            "matched_count": pair_counts.get(doi, 0),
+            "input_only_count": len(input_only),
+            "reference_only_count": len(reference_only),
+            "input_only": [_record_brief(record) for record in input_only],
+            "reference_only": [_record_brief(record) for record in reference_only],
+        }
+    return reports
+
+
+def _build_doi_reports(
+    predicted_records: list[Record],
+    reference_records: list[Record],
+    exact_pairs: list[tuple[Record, Record]],
+    partial_pairs: list[tuple[Record, Record]],
+    predicted_unmatched: list[Record],
+    reference_unmatched: list[Record],
+    *,
+    predicted_excluded: list[dict[str, Any]] | None = None,
+    reference_excluded: list[dict[str, Any]] | None = None,
+    additional_row_differences: list[dict[str, Any]] | None = None,
+) -> dict[str, dict[str, Any]]:
+    predicted_by_doi = _records_by_doi(predicted_records)
+    reference_by_doi = _records_by_doi(reference_records)
+    predicted_unmatched_by_doi = _records_by_doi(predicted_unmatched)
+    reference_unmatched_by_doi = _records_by_doi(reference_unmatched)
+    predicted_excluded_by_doi = _exclusions_by_doi(predicted_excluded)
+    reference_excluded_by_doi = _exclusions_by_doi(reference_excluded)
+
+    exact_counts = Counter(predicted_record.doi for predicted_record, _ in exact_pairs if predicted_record.doi)
+    partial_counts = Counter(
+        predicted_record.doi for predicted_record, _ in partial_pairs if predicted_record.doi
+    )
+    row_differences_by_doi: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for predicted_record, reference_record in partial_pairs:
+        report = _paired_difference_report(
+            predicted_record,
+            reference_record,
+            match_basis="same_doi_system_and_metric",
+            include_identity=False,
+        )
+        if report is not None and predicted_record.doi:
+            row_differences_by_doi[predicted_record.doi].append(report)
+
+    for report in additional_row_differences or []:
+        doi = str(report.get("doi") or "")
+        if not doi:
+            continue
+        report_without_doi = {key: value for key, value in report.items() if key != "doi"}
+        row_differences_by_doi[doi].append(report_without_doi)
+
+    dois = sorted(
+        set(predicted_by_doi)
+        | set(reference_by_doi)
+        | set(predicted_excluded_by_doi)
+        | set(reference_excluded_by_doi)
+    )
+    reports: dict[str, dict[str, Any]] = {}
+    for doi in dois:
+        input_only = sorted(predicted_unmatched_by_doi.get(doi, []), key=lambda record: record.row_index)
+        reference_only = sorted(
+            reference_unmatched_by_doi.get(doi, []),
+            key=lambda record: record.row_index,
+        )
+        row_differences = sorted(
+            row_differences_by_doi.get(doi, []),
+            key=lambda item: (
+                item.get("input_row_index", -1),
+                item.get("reference_row_index", -1),
+                item.get("match_basis", ""),
+            ),
+        )
+        predicted_excluded_for_doi = predicted_excluded_by_doi.get(doi, [])
+        reference_excluded_for_doi = reference_excluded_by_doi.get(doi, [])
+        reports[doi] = {
+            "input_count": len(predicted_by_doi.get(doi, [])),
+            "reference_count": len(reference_by_doi.get(doi, [])),
+            "exact_matches": exact_counts.get(doi, 0),
+            "partial_matches": partial_counts.get(doi, 0),
+            "row_wise_differences": row_differences,
+            "input_only_count": len(input_only),
+            "reference_only_count": len(reference_only),
+            "input_only": [_record_brief(record) for record in input_only],
+            "reference_only": [_record_brief(record) for record in reference_only],
+            "excluded_input_count": len(predicted_excluded_for_doi),
+            "excluded_reference_count": len(reference_excluded_for_doi),
+            "excluded_input_reasons": _count_exclusion_reasons(predicted_excluded_for_doi),
+            "excluded_reference_reasons": _count_exclusion_reasons(reference_excluded_for_doi),
+        }
+    return reports
+
+
+def compare_record_sets(
+    predicted: list[Record],
+    reference: list[Record],
+    *,
+    predicted_excluded: list[dict[str, Any]] | None = None,
+    reference_excluded: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     exact_pairs, predicted_remaining, reference_remaining = pair_by_key(predicted, reference, exact_key)
     partial_pairs, predicted_unmatched, reference_unmatched = pair_by_metric_signature(
         predicted_remaining,
         reference_remaining,
     )
 
-    partial_mismatches = [
-        {
-            "predicted": serialize_record(predicted_record),
-            "reference": serialize_record(reference_record),
-            "differences": build_difference_fields(predicted_record, reference_record),
-        }
-        for predicted_record, reference_record in partial_pairs
-        if build_difference_fields(predicted_record, reference_record)
-    ]
+    partial_mismatches = []
+    for predicted_record, reference_record in partial_pairs:
+        differences = build_difference_fields(predicted_record, reference_record)
+        if differences:
+            partial_mismatches.append(
+                {
+                    "predicted": serialize_record(predicted_record),
+                    "reference": serialize_record(reference_record),
+                    "differences": differences,
+                }
+            )
 
     return {
         "summary": {
@@ -632,6 +998,16 @@ def compare_record_sets(predicted: list[Record], reference: list[Record]) -> dic
         "partial_mismatches": partial_mismatches,
         "missing_in_prediction": [serialize_record(record) for record in reference_unmatched],
         "extra_in_prediction": [serialize_record(record) for record in predicted_unmatched],
+        "doi_reports": _build_doi_reports(
+            predicted,
+            reference,
+            exact_pairs,
+            partial_pairs,
+            predicted_unmatched,
+            reference_unmatched,
+            predicted_excluded=predicted_excluded,
+            reference_excluded=reference_excluded,
+        ),
     }
 
 
@@ -864,6 +1240,83 @@ def _key_with_smiles(record: Record) -> tuple[Any, ...] | None:
     return None
 
 
+def _metric_selection_signature(record: Record) -> tuple[Any, ...] | None:
+    solute_key = _entity_comparison_key(record.compound_name, record.solute_smiles)
+    if solute_key is None:
+        return None
+    solvent_key = _record_solvent_comparison_key(record)
+    if not solvent_key or any(item[0] is None for item in solvent_key):
+        return None
+    return (
+        record.doi,
+        record.mode,
+        record.temperature,
+        record.fraction_type,
+        solvent_key,
+        solute_key,
+    )
+
+
+def _select_reference_records_for_predicted_metrics(
+    reference_records: list[Record],
+    predicted_records: list[Record],
+) -> tuple[list[Record], dict[str, int]]:
+    predicted_keys_with_smiles = {
+        key for key in (_key_with_smiles(record) for record in predicted_records) if key is not None
+    }
+    predicted_keys_without_smiles = {
+        key for key in (_key_without_smiles(record) for record in predicted_records) if key is not None
+    }
+    predicted_metrics_by_signature: dict[tuple[Any, ...], set[str]] = defaultdict(set)
+    for record in predicted_records:
+        signature = _metric_selection_signature(record)
+        if signature is not None:
+            predicted_metrics_by_signature[signature].add(record.metric)
+
+    records_by_source_row: dict[tuple[str, int], list[Record]] = defaultdict(list)
+    for record in reference_records:
+        records_by_source_row[(record.dataset, record.row_index)].append(record)
+
+    selected: list[Record] = []
+    stats: Counter[str] = Counter()
+    metric_priority = {"mole_fraction": 0, "g_per_100g": 1}
+
+    for source_records in records_by_source_row.values():
+        unique_metrics = {record.metric for record in source_records}
+        if len(unique_metrics) <= 1:
+            selected.extend(source_records)
+            continue
+
+        stats["multi_metric_source_rows"] += 1
+        stats["extra_metric_records_removed"] += len(source_records) - 1
+
+        def selection_score(record: Record) -> tuple[int, int, int]:
+            signature = _metric_selection_signature(record)
+            predicted_metrics = (
+                predicted_metrics_by_signature.get(signature, set())
+                if signature is not None
+                else set()
+            )
+            return (
+                int(_key_with_smiles(record) in predicted_keys_with_smiles),
+                int(_key_without_smiles(record) in predicted_keys_without_smiles),
+                int(record.metric in predicted_metrics),
+            )
+
+        chosen = max(
+            source_records,
+            key=lambda record: (
+                selection_score(record),
+                -metric_priority.get(record.metric, 99),
+                -record.row_index,
+            ),
+        )
+        selected.append(chosen)
+        stats[f"selected_{chosen.metric}"] += 1
+
+    return selected, dict(stats)
+
+
 def _load_standardized_records_for_bigsoldb(path: str | Path) -> tuple[list[Record], list[dict[str, Any]], int]:
     dataframe = pd.read_csv(path, low_memory=False)
     records: list[Record] = []
@@ -1003,25 +1456,29 @@ def _build_report(
     reference_label: str,
 ) -> dict[str, Any]:
     deduped_reference_records = _dedupe_records(reference_records)
-    reference_dois = {record.doi for record in deduped_reference_records if record.doi}
+    selected_reference_records, reference_metric_selection = _select_reference_records_for_predicted_metrics(
+        deduped_reference_records,
+        predicted_records,
+    )
+    predicted_dois = {record.doi for record in predicted_records if record.doi}
+    reference_dois = {record.doi for record in selected_reference_records if record.doi}
+    shared_dois = predicted_dois & reference_dois
 
-    comparable_records = predicted_records
-    comparable_records_with_shared_doi = [record for record in comparable_records if record.doi in reference_dois]
-    excluded_missing_doi = len(comparable_records) - len(comparable_records_with_shared_doi)
-    shared_dois = {record.doi for record in comparable_records_with_shared_doi}
+    comparable_records_all_dois = predicted_records
+    reference_records_all_dois = selected_reference_records
+    comparable_records = _records_with_dois(comparable_records_all_dois, shared_dois)
+    reference_records_with_shared_doi = _records_with_dois(reference_records_all_dois, shared_dois)
+    predicted_excluded_with_shared_doi = _exclusions_with_dois(predicted_excluded, shared_dois)
+    reference_excluded_with_shared_doi = _exclusions_with_dois(reference_excluded, shared_dois)
+    excluded_missing_doi = len(comparable_records_all_dois) - len(comparable_records)
+    reference_records_without_shared_doi = len(reference_records_all_dois) - len(reference_records_with_shared_doi)
+    reference_source_rows_all_dois = {record.row_index for record in reference_records_all_dois}
+    reference_source_rows_with_shared_doi = {
+        record.row_index for record in reference_records_with_shared_doi
+    }
 
-    target_metrics_by_doi: dict[str, set[str]] = defaultdict(set)
-    for record in comparable_records_with_shared_doi:
-        target_metrics_by_doi[record.doi].add(record.metric)
-
-    reference_records_with_shared_doi = [
-        record
-        for record in deduped_reference_records
-        if record.doi in shared_dois and record.metric in target_metrics_by_doi.get(record.doi, set())
-    ]
-
-    without_smiles_pairs, predicted_non_matches_without_smiles, _ = pair_by_key(
-        comparable_records_with_shared_doi,
+    without_smiles_pairs, predicted_non_matches_without_smiles, reference_non_matches_without_smiles = pair_by_key(
+        comparable_records,
         reference_records_with_shared_doi,
         _key_without_smiles,
     )
@@ -1033,8 +1490,8 @@ def _build_report(
     }
     reference_matched_row_indices_without_smiles = {reference_record.row_index for _, reference_record in without_smiles_pairs}
 
-    with_smiles_pairs, predicted_non_matches_with_smiles, _ = pair_by_key(
-        comparable_records_with_shared_doi,
+    with_smiles_pairs, predicted_non_matches_with_smiles, reference_non_matches_with_smiles = pair_by_key(
+        comparable_records,
         reference_records_with_shared_doi,
         _key_with_smiles,
     )
@@ -1046,52 +1503,163 @@ def _build_report(
     }
     reference_matched_row_indices_with_smiles = {reference_record.row_index for _, reference_record in with_smiles_pairs}
 
-    paired_with_smiles_keys = {
-        predicted_record.row_index: reference_record.row_index for predicted_record, reference_record in with_smiles_pairs
+    with_smiles_predicted_keys = {
+        _record_occurrence_key(predicted_record) for predicted_record, _ in with_smiles_pairs
+    }
+    with_smiles_pair_keys = {
+        _pair_occurrence_key(predicted_record, reference_record)
+        for predicted_record, reference_record in with_smiles_pairs
     }
     fails_only_with_smiles = [
         record
         for record in predicted_matches_without_smiles
-        if paired_with_smiles_keys.get(record.row_index) is None
+        if _record_occurrence_key(record) not in with_smiles_predicted_keys
     ]
+    smiles_mismatch_differences: list[dict[str, Any]] = []
+    for predicted_record, reference_record in without_smiles_pairs:
+        if _pair_occurrence_key(predicted_record, reference_record) in with_smiles_pair_keys:
+            continue
+        report = _paired_difference_report(
+            predicted_record,
+            reference_record,
+            match_basis="matched_without_smiles_but_not_with_smiles",
+            include_identity=True,
+        )
+        if report is not None:
+            smiles_mismatch_differences.append({"doi": predicted_record.doi, **report})
+
+    row_exact_pairs, predicted_row_remaining, reference_row_remaining = pair_by_key(
+        comparable_records,
+        reference_records_with_shared_doi,
+        exact_key,
+    )
+    row_partial_pairs, predicted_row_unmatched, reference_row_unmatched = pair_by_metric_signature(
+        predicted_row_remaining,
+        reference_row_remaining,
+    )
+    doi_reports = _build_doi_reports(
+        comparable_records,
+        reference_records_with_shared_doi,
+        row_exact_pairs,
+        row_partial_pairs,
+        predicted_row_unmatched,
+        reference_row_unmatched,
+        predicted_excluded=predicted_excluded_with_shared_doi,
+        reference_excluded=reference_excluded_with_shared_doi,
+        additional_row_differences=smiles_mismatch_differences,
+    )
+    without_smiles_reports = _build_doi_match_pass_reports(
+        comparable_records,
+        reference_records_with_shared_doi,
+        without_smiles_pairs,
+        predicted_non_matches_without_smiles,
+        reference_non_matches_without_smiles,
+    )
+    with_smiles_reports = _build_doi_match_pass_reports(
+        comparable_records,
+        reference_records_with_shared_doi,
+        with_smiles_pairs,
+        predicted_non_matches_with_smiles,
+        reference_non_matches_with_smiles,
+    )
+    empty_pass_report = {
+        "matched_count": 0,
+        "input_only_count": 0,
+        "reference_only_count": 0,
+        "input_only": [],
+        "reference_only": [],
+    }
+    for doi, doi_report in doi_reports.items():
+        doi_report["without_smiles"] = without_smiles_reports.get(doi, empty_pass_report)
+        doi_report["with_smiles"] = with_smiles_reports.get(doi, empty_pass_report)
+
     unmatched_dois = sorted({record.doi for record in predicted_non_matches_with_smiles if record.doi})
+    reference_shared_rows = len(reference_records_with_shared_doi)
 
     summary = {
+        "comparison_scope": "shared_doi",
         "predicted_total_rows": predicted_total_rows,
         "reference_total_rows": reference_total_rows,
+        "predicted_comparable_rows_all_dois": len(comparable_records_all_dois),
+        "reference_comparable_rows_all_dois": len(reference_records_all_dois),
+        "reference_comparable_source_rows_all_dois": len(reference_source_rows_all_dois),
         "predicted_comparable_rows": len(comparable_records),
-        "predicted_comparable_rows_with_shared_doi": len(comparable_records_with_shared_doi),
+        "reference_comparable_rows": reference_shared_rows,
+        "predicted_comparable_rows_with_shared_doi": len(comparable_records),
+        "reference_comparable_rows_with_shared_doi": reference_shared_rows,
+        "reference_comparable_source_rows_with_shared_doi": len(reference_source_rows_with_shared_doi),
+        "predicted_comparable_rows_without_shared_doi": excluded_missing_doi,
+        "reference_comparable_rows_without_shared_doi": reference_records_without_shared_doi,
         "excluded_missing_doi": excluded_missing_doi,
+        "reference_missing_smiles_skipped": _count_exclusion_reasons(
+            reference_excluded_with_shared_doi
+        ).get("missing_reference_smiles", 0),
+        "reference_missing_smiles_skipped_all_dois": _count_exclusion_reasons(reference_excluded).get(
+            "missing_reference_smiles",
+            0,
+        ),
         "reference_keys_without_smiles": len(
-            {key for key in (_key_without_smiles(record) for record in deduped_reference_records) if key is not None}
+            {
+                key
+                for key in (_key_without_smiles(record) for record in reference_records_with_shared_doi)
+                if key is not None
+            }
         ),
         "reference_keys_with_smiles": len(
-            {key for key in (_key_with_smiles(record) for record in deduped_reference_records) if key is not None}
+            {
+                key
+                for key in (_key_with_smiles(record) for record in reference_records_with_shared_doi)
+                if key is not None
+            }
         ),
+        "predicted_unique_dois": len(predicted_dois),
         "reference_unique_dois": len(reference_dois),
-        "predicted_exclusion_reasons": _count_exclusion_reasons(predicted_excluded),
+        "shared_doi_count": len(shared_dois),
+        "predicted_exclusion_reasons": _count_exclusion_reasons(predicted_excluded_with_shared_doi),
+        "reference_exclusion_reasons": _count_exclusion_reasons(reference_excluded_with_shared_doi),
+        "predicted_exclusion_reasons_all_dois": _count_exclusion_reasons(predicted_excluded),
+        "reference_exclusion_reasons_all_dois": _count_exclusion_reasons(reference_excluded),
+        "reference_metric_selection": reference_metric_selection,
         "without_smiles": {
             "matching_unique_keys": len(matching_without_smiles),
             "matched_predicted_rows": len(predicted_matches_without_smiles),
             "coverage_predicted_shared_doi_percent": round(
-                _percentage(len(predicted_matches_without_smiles), len(comparable_records_with_shared_doi)), 2
+                _percentage(len(predicted_matches_without_smiles), len(comparable_records)), 2
             ),
             "non_matching_predicted_rows": len(predicted_non_matches_without_smiles),
+            "reference_records_covered": len(without_smiles_pairs),
             "reference_rows_covered": len(reference_matched_row_indices_without_smiles),
+            "reference_source_rows_covered": len(reference_matched_row_indices_without_smiles),
             "reference_coverage_percent": round(
-                _percentage(len(reference_matched_row_indices_without_smiles), reference_total_rows), 2
+                _percentage(len(without_smiles_pairs), reference_shared_rows), 2
+            ),
+            "reference_source_row_coverage_percent": round(
+                _percentage(
+                    len(reference_matched_row_indices_without_smiles),
+                    len(reference_source_rows_with_shared_doi),
+                ),
+                2,
             ),
         },
         "with_smiles": {
             "matching_unique_keys": len(matching_with_smiles),
             "matched_predicted_rows": len(predicted_matches_with_smiles),
             "coverage_predicted_shared_doi_percent": round(
-                _percentage(len(predicted_matches_with_smiles), len(comparable_records_with_shared_doi)), 2
+                _percentage(len(predicted_matches_with_smiles), len(comparable_records)), 2
             ),
             "non_matching_predicted_rows": len(predicted_non_matches_with_smiles),
+            "reference_records_covered": len(with_smiles_pairs),
             "reference_rows_covered": len(reference_matched_row_indices_with_smiles),
+            "reference_source_rows_covered": len(reference_matched_row_indices_with_smiles),
             "reference_coverage_percent": round(
-                _percentage(len(reference_matched_row_indices_with_smiles), reference_total_rows), 2
+                _percentage(len(with_smiles_pairs), reference_shared_rows), 2
+            ),
+            "reference_source_row_coverage_percent": round(
+                _percentage(
+                    len(reference_matched_row_indices_with_smiles),
+                    len(reference_source_rows_with_shared_doi),
+                ),
+                2,
             ),
         },
         "smiles_mismatch_analysis": {
@@ -1107,15 +1675,22 @@ def _build_report(
         "summary": summary,
         "excluded_predicted": predicted_excluded,
         "excluded_reference": reference_excluded,
-        "shared_doi_predicted_records": len(comparable_records_with_shared_doi),
+        "shared_doi_predicted_records": len(comparable_records),
         "shared_doi_reference_records": len(reference_records_with_shared_doi),
         "non_matching_predicted_without_smiles": [
             serialize_record(record) for record in predicted_non_matches_without_smiles
         ],
+        "non_matching_reference_without_smiles": [
+            serialize_record(record) for record in reference_non_matches_without_smiles
+        ],
         "non_matching_predicted_with_smiles": [
             serialize_record(record) for record in predicted_non_matches_with_smiles
         ],
+        "non_matching_reference_with_smiles": [
+            serialize_record(record) for record in reference_non_matches_with_smiles
+        ],
         "unmatched_dois_with_smiles": unmatched_dois,
+        "doi_reports": doi_reports,
     }
 
 
@@ -1150,10 +1725,6 @@ def _load_mixturesoldb_records(path: str | Path) -> tuple[list[Record], list[dic
             continue
         fraction_solvent1 = float(fraction_solvent1)
 
-        solute_smiles = canonicalize_smiles(row.get("SMILES_Solute"))
-        solvent1_smiles = canonicalize_smiles(row.get("SMILES_Solvent1"))
-        solvent2_smiles = canonicalize_smiles(row.get("SMILES_Solvent2"))
-
         measurements: list[tuple[str, float]] = []
         sol_mole = round_or_none(row.get("Solubility(mole_fraction)"), ROUND_SOLUBILITY)
         if sol_mole is not None:
@@ -1166,14 +1737,29 @@ def _load_mixturesoldb_records(path: str | Path) -> tuple[list[Record], list[dic
             continue
 
         if _is_effectively_one(fraction_solvent1):
+            required_smiles = ("SMILES_Solute", "SMILES_Solvent1")
+            smiles_by_field, smiles_exclusion = _required_reference_smiles(row, required_smiles)
+            if smiles_exclusion is not None:
+                excluded.append({"row_index": row_index, "doi": doi, **smiles_exclusion})
+                continue
             mode = "single"
-            active_solvent_smiles = solvent1_smiles
+            active_solvent_smiles = smiles_by_field["SMILES_Solvent1"]
             active_solvent_name = clean_text(row.get("Solvent1"))
         elif _is_effectively_zero(fraction_solvent1):
+            required_smiles = ("SMILES_Solute", "SMILES_Solvent2")
+            smiles_by_field, smiles_exclusion = _required_reference_smiles(row, required_smiles)
+            if smiles_exclusion is not None:
+                excluded.append({"row_index": row_index, "doi": doi, **smiles_exclusion})
+                continue
             mode = "single"
-            active_solvent_smiles = solvent2_smiles
+            active_solvent_smiles = smiles_by_field["SMILES_Solvent2"]
             active_solvent_name = clean_text(row.get("Solvent2"))
         else:
+            required_smiles = ("SMILES_Solute", "SMILES_Solvent1", "SMILES_Solvent2")
+            smiles_by_field, smiles_exclusion = _required_reference_smiles(row, required_smiles)
+            if smiles_exclusion is not None:
+                excluded.append({"row_index": row_index, "doi": doi, **smiles_exclusion})
+                continue
             mode = "binary"
             active_solvent_smiles = None
             active_solvent_name = None
@@ -1195,7 +1781,7 @@ def _load_mixturesoldb_records(path: str | Path) -> tuple[list[Record], list[dic
                         fraction_type=None,
                         fraction_solvent1=None,
                         compound_name=clean_text(row.get("Compound_Name")),
-                        solute_smiles=solute_smiles,
+                        solute_smiles=smiles_by_field["SMILES_Solute"],
                         solvent1_name=active_solvent_name,
                         solvent2_name=None,
                         solvent1_smiles=active_solvent_smiles,
@@ -1215,11 +1801,11 @@ def _load_mixturesoldb_records(path: str | Path) -> tuple[list[Record], list[dic
                         fraction_type=fraction_type,
                         fraction_solvent1=round(fraction_solvent1, ROUND_FRACTION),
                         compound_name=clean_text(row.get("Compound_Name")),
-                        solute_smiles=solute_smiles,
+                        solute_smiles=smiles_by_field["SMILES_Solute"],
                         solvent1_name=clean_text(row.get("Solvent1")),
                         solvent2_name=clean_text(row.get("Solvent2")),
-                        solvent1_smiles=solvent1_smiles,
-                        solvent2_smiles=solvent2_smiles,
+                        solvent1_smiles=smiles_by_field["SMILES_Solvent1"],
+                        solvent2_smiles=smiles_by_field["SMILES_Solvent2"],
                         fraction_solvent1_raw=fraction_solvent1,
                     )
                 )
@@ -1260,8 +1846,11 @@ def _augment_summary(
     reference_shared_rows = sum(1 for record in reference_records if record.doi in shared_dois)
     matched_rows = int(summary["exact_matches"]) + int(summary["partial_matches"])
 
+    summary["comparison_scope"] = "shared_doi"
     summary["predicted_total_rows"] = len(predicted_records) + len(predicted_excluded)
     summary["reference_total_rows"] = len(reference_records) + len(reference_excluded)
+    summary["predicted_comparable_rows_all_dois"] = len(predicted_records)
+    summary["reference_comparable_rows_all_dois"] = len(reference_records)
     summary["predicted_unique_dois"] = len(predicted_dois)
     summary["reference_unique_dois"] = len(reference_dois)
     summary["shared_doi_count"] = len(shared_dois)
@@ -1300,12 +1889,26 @@ def compare_csv_files(
 
     predicted_records, predicted_excluded = load_records(predicted_path, predicted_format, "predicted")
     reference_records, reference_excluded = load_records(reference_path, reference_format, "reference")
-    report = compare_record_sets(predicted_records, reference_records)
+    predicted_dois = {record.doi for record in predicted_records if record.doi}
+    reference_dois = {record.doi for record in reference_records if record.doi}
+    shared_dois = predicted_dois & reference_dois
+    predicted_records_with_shared_doi = _records_with_dois(predicted_records, shared_dois)
+    reference_records_with_shared_doi = _records_with_dois(reference_records, shared_dois)
+    predicted_excluded_with_shared_doi = _exclusions_with_dois(predicted_excluded, shared_dois)
+    reference_excluded_with_shared_doi = _exclusions_with_dois(reference_excluded, shared_dois)
+    report = compare_record_sets(
+        predicted_records_with_shared_doi,
+        reference_records_with_shared_doi,
+        predicted_excluded=predicted_excluded_with_shared_doi,
+        reference_excluded=reference_excluded_with_shared_doi,
+    )
     report["comparison_mode"] = "generic"
     report["excluded_predicted"] = predicted_excluded
     report["excluded_reference"] = reference_excluded
-    report["summary"]["excluded_predicted"] = len(predicted_excluded)
-    report["summary"]["excluded_reference"] = len(reference_excluded)
+    report["summary"]["excluded_predicted"] = len(predicted_excluded_with_shared_doi)
+    report["summary"]["excluded_reference"] = len(reference_excluded_with_shared_doi)
+    report["summary"]["excluded_predicted_all_dois"] = len(predicted_excluded)
+    report["summary"]["excluded_reference_all_dois"] = len(reference_excluded)
     _augment_summary(report, predicted_records, reference_records, predicted_excluded, reference_excluded)
     return report
 
@@ -1320,65 +1923,186 @@ def print_comparison_summary(
     if comparison_mode in {"bigsoldb", "mixturesoldb"}:
         summary = report["summary"]
         reference_label = report.get("reference_label", reference_label)
+        reference_source_rows_all = summary.get("reference_comparable_source_rows_all_dois")
+        reference_source_rows_shared = summary.get("reference_comparable_source_rows_with_shared_doi")
+        reference_smiles_skips_all = summary.get("reference_missing_smiles_skipped_all_dois")
+        predicted_exclusions_all = summary.get("predicted_exclusion_reasons_all_dois", {})
+        predicted_exclusions_shared = summary.get("predicted_exclusion_reasons", {})
+        reference_metric_selection = summary.get("reference_metric_selection", {})
 
-        print(f"{predicted_label} entries: {summary['predicted_total_rows']}")
-        print(f"{reference_label} entries: {summary['reference_total_rows']}")
-        print(f"Comparable {reference_label} keys without SMILES: {summary['reference_keys_without_smiles']}")
-        print(f"Comparable {reference_label} keys with SMILES: {summary['reference_keys_with_smiles']}")
-        print(f"Unique {reference_label} DOIs: {summary['reference_unique_dois']}")
+        print("\n" + "=" * 80)
+        print("INPUTS AND SCOPE")
+        print("=" * 80)
+        print(f"{predicted_label} raw CSV rows: {summary['predicted_total_rows']}")
+        print(f"{reference_label} raw CSV rows: {summary['reference_total_rows']}")
+        print("Comparison scope: shared DOI records only")
+        print(f"Unique comparable {predicted_label} DOIs: {summary['predicted_unique_dois']}")
+        print(f"Unique comparable {reference_label} DOIs: {summary['reference_unique_dois']}")
+        print(f"Shared DOIs: {summary['shared_doi_count']}")
+
+        print("\n" + "=" * 80)
+        print("NORMALIZED RECORD COUNTS")
+        print("=" * 80)
+        print(
+            f"{predicted_label} comparable measurement records, all DOIs: "
+            f"{summary['predicted_comparable_rows_all_dois']} / {summary['predicted_total_rows']} raw rows"
+        )
+        if reference_source_rows_all is None:
+            print(
+                f"{reference_label} comparable measurement records, all DOIs: "
+                f"{summary['reference_comparable_rows_all_dois']}"
+            )
+        else:
+            print(
+                f"{reference_label} comparable measurement records, all DOIs: "
+                f"{summary['reference_comparable_rows_all_dois']} from "
+                f"{reference_source_rows_all} source rows"
+            )
+        if comparison_mode == "mixturesoldb":
+            print(
+                "Note: one MixtureSolDB source row can produce two records when both "
+                "mole-fraction and g/100g solubilities are present."
+            )
+            if reference_metric_selection:
+                print(
+                    "Collapsed MixtureSolDB source rows with both solubility columns: "
+                    f"{reference_metric_selection.get('multi_metric_source_rows', 0)} "
+                    "source rows; removed "
+                    f"{reference_metric_selection.get('extra_metric_records_removed', 0)} "
+                    "extra metric records."
+                )
+        reference_source_note = (
+            f" from {reference_source_rows_shared} source rows"
+            if reference_source_rows_shared is not None
+            else ""
+        )
+        print(
+            f"Shared-DOI {reference_label} comparable measurement records: "
+            f"{summary['reference_comparable_rows']}{reference_source_note}"
+        )
+        if reference_smiles_skips_all is None:
+            print(
+                f"Shared-DOI {reference_label} source rows skipped for missing reference SMILES: "
+                f"{summary['reference_missing_smiles_skipped']}"
+            )
+        else:
+            print(
+                f"Shared-DOI {reference_label} source rows skipped for missing reference SMILES: "
+                f"{summary['reference_missing_smiles_skipped']} "
+                f"({reference_smiles_skips_all} across all DOIs)"
+            )
+        print(
+            f"Shared-DOI unique {reference_label} comparison keys, ignoring SMILES/InChI: "
+            f"{summary['reference_keys_without_smiles']}"
+        )
+        print(
+            f"Shared-DOI unique {reference_label} comparison keys, including InChI: "
+            f"{summary['reference_keys_with_smiles']}"
+        )
 
         print("\n" + "=" * 80)
         print("COMPARABILITY SUMMARY")
         print("=" * 80)
-        print(f"Comparable {predicted_label} rows: {summary['predicted_comparable_rows']} / {summary['predicted_total_rows']}")
         print(
-            f"Comparable {predicted_label} rows with DOI present in {reference_label}: "
-            f"{summary['predicted_comparable_rows_with_shared_doi']}"
+            f"Shared-DOI comparable {predicted_label} measurement records: "
+            f"{summary['predicted_comparable_rows']} / {summary['predicted_comparable_rows_all_dois']}"
         )
-        print(f"Excluded from comparison because DOI is absent in {reference_label}: {summary['excluded_missing_doi']}")
-        for reason, count in summary.get("predicted_exclusion_reasons", {}).items():
-            print(f"Excluded - {reason}: {count}")
+        print(
+            f"{predicted_label} comparable records excluded because DOI is absent in {reference_label}: "
+            f"{summary['excluded_missing_doi']}"
+        )
+        print(
+            f"{reference_label} comparable records excluded because DOI is absent in {predicted_label}: "
+            f"{summary['reference_comparable_rows_without_shared_doi']}"
+        )
+        if predicted_exclusions_all:
+            print(
+                f"{predicted_label} raw rows excluded before DOI filtering: "
+                f"{sum(predicted_exclusions_all.values())}"
+            )
+        if predicted_exclusions_shared:
+            print(f"{predicted_label} raw rows excluded within shared DOI scope:")
+            for reason, count in predicted_exclusions_shared.items():
+                print(f"  {reason}: {count}")
 
         without_smiles = summary["without_smiles"]
+        without_smiles_reference_records = without_smiles.get(
+            "reference_records_covered",
+            without_smiles.get("reference_rows_covered", 0),
+        )
         print("\n" + "=" * 80)
         print("COMPARISON WITHOUT SMILES")
         print("=" * 80)
         print(f"Matching unique keys: {without_smiles['matching_unique_keys']}")
-        print(f"{predicted_label} comparable rows with matches: {without_smiles['matched_predicted_rows']}")
         print(
-            f"Coverage over shared-DOI comparable {predicted_label} rows: "
-            f"{without_smiles['coverage_predicted_shared_doi_percent']:.2f}%"
+            f"Matched {predicted_label} records: {without_smiles['matched_predicted_rows']} / "
+            f"{summary['predicted_comparable_rows']} "
+            f"({without_smiles['coverage_predicted_shared_doi_percent']:.2f}%)"
         )
-        print(f"Non-matching comparable {predicted_label} rows: {without_smiles['non_matching_predicted_rows']}")
+        print(f"Unmatched {predicted_label} records: {without_smiles['non_matching_predicted_rows']}")
         print(
-            f"{reference_label} entries covered (without SMILES): "
-            f"{without_smiles['reference_rows_covered']} / {summary['reference_total_rows']} "
+            f"Covered {reference_label} measurement records: "
+            f"{without_smiles_reference_records} / {summary['reference_comparable_rows']} "
             f"({without_smiles['reference_coverage_percent']:.2f}%)"
         )
+        if reference_source_rows_shared is not None:
+            without_smiles_source_rows = without_smiles.get(
+                "reference_source_rows_covered",
+                without_smiles_reference_records,
+            )
+            print(
+                f"Covered {reference_label} source rows: "
+                f"{without_smiles_source_rows} / {reference_source_rows_shared} "
+                f"({without_smiles.get('reference_source_row_coverage_percent', 0.0):.2f}%)"
+            )
 
         with_smiles = summary["with_smiles"]
+        with_smiles_reference_records = with_smiles.get(
+            "reference_records_covered",
+            with_smiles.get("reference_rows_covered", 0),
+        )
         print("\n" + "=" * 80)
         print("COMPARISON INCLUDING SMILES")
         print("=" * 80)
-        print(f"Matching unique keys with SMILES: {with_smiles['matching_unique_keys']}")
-        print(f"{predicted_label} comparable rows with SMILES matches: {with_smiles['matched_predicted_rows']}")
+        print(f"Matching unique keys including InChI: {with_smiles['matching_unique_keys']}")
         print(
-            f"Coverage with SMILES over shared-DOI comparable {predicted_label} rows: "
-            f"{with_smiles['coverage_predicted_shared_doi_percent']:.2f}%"
+            f"Matched {predicted_label} records: {with_smiles['matched_predicted_rows']} / "
+            f"{summary['predicted_comparable_rows']} "
+            f"({with_smiles['coverage_predicted_shared_doi_percent']:.2f}%)"
         )
-        print(f"Comparable {predicted_label} rows failing with SMILES: {with_smiles['non_matching_predicted_rows']}")
+        print(f"Unmatched {predicted_label} records: {with_smiles['non_matching_predicted_rows']}")
         print(
-            f"{reference_label} entries covered (with InChI): "
-            f"{with_smiles['reference_rows_covered']} / {summary['reference_total_rows']} "
+            f"Covered {reference_label} measurement records: "
+            f"{with_smiles_reference_records} / {summary['reference_comparable_rows']} "
             f"({with_smiles['reference_coverage_percent']:.2f}%)"
         )
+        if reference_source_rows_shared is not None:
+            with_smiles_source_rows = with_smiles.get(
+                "reference_source_rows_covered",
+                with_smiles_reference_records,
+            )
+            print(
+                f"Covered {reference_label} source rows: "
+                f"{with_smiles_source_rows} / {reference_source_rows_shared} "
+                f"({with_smiles.get('reference_source_row_coverage_percent', 0.0):.2f}%)"
+            )
 
         mismatch_analysis = summary["smiles_mismatch_analysis"]
         print("\n" + "=" * 80)
-        print("ANALYZING SMILES MISMATCH CAUSES")
+        print("SMILES/INCHI IMPACT")
         print("=" * 80)
-        print(f"Rows that match without SMILES: {mismatch_analysis['rows_matching_without_smiles']}")
-        print(f"Rows that fail once SMILES are required: {mismatch_analysis['rows_fail_once_smiles_required']}")
+        print(
+            f"{predicted_label} records matched when identity is ignored: "
+            f"{mismatch_analysis['rows_matching_without_smiles']}"
+        )
+        print(
+            f"Matched records lost when InChI is required: "
+            f"{mismatch_analysis['rows_fail_once_smiles_required']}"
+        )
+        print(
+            f"Unique DOIs with non-matching InChI-aware rows: "
+            f"{mismatch_analysis['unique_dois_with_non_matching_rows']}"
+        )
         return
 
     summary = report["summary"]
@@ -1386,8 +2110,14 @@ def print_comparison_summary(
     print("\n" + "=" * 80)
     print("COMPARABILITY SUMMARY")
     print("=" * 80)
-    print(f"{predicted_label} comparable rows: {summary['predicted_records']} / {summary['predicted_total_rows']}")
-    print(f"{reference_label} comparable rows: {summary['reference_records']} / {summary['reference_total_rows']}")
+    print(
+        f"Shared-DOI {predicted_label} comparable rows: "
+        f"{summary['predicted_records']} / {summary['predicted_comparable_rows_all_dois']}"
+    )
+    print(
+        f"Shared-DOI {reference_label} comparable rows: "
+        f"{summary['reference_records']} / {summary['reference_comparable_rows_all_dois']}"
+    )
     print(f"{predicted_label} unique DOIs: {summary['predicted_unique_dois']}")
     print(f"{reference_label} unique DOIs: {summary['reference_unique_dois']}")
     print(f"Shared DOIs: {summary['shared_doi_count']}")

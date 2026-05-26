@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -51,7 +52,11 @@ def extract_molecule_placeholders(paths: list[Path]) -> dict[str, list[dict[str,
     grouped_solvents: dict[tuple[str, tuple[str, ...]], dict[str, Any]] = {}
 
     for path in paths:
-        document, _ = load_yaml_document(path)
+        try:
+            document, _ = load_yaml_document(path)
+        except Exception as e:
+            print(f"Error loading {path}: {e}")
+            continue
         source = path.stem
         for item in document:
             compound = str(item.get("compound", "")).strip()
@@ -66,6 +71,8 @@ def extract_molecule_placeholders(paths: list[Path]) -> dict[str, list[dict[str,
                             "synonyms": list(dict.fromkeys(solute_group[1:])),
                             "smiles": "",
                             "sources": [],
+                            "molecule_type": "solute",
+                            "enabled": True,
                         },
                     )
                     if source not in entry["sources"]:
@@ -88,6 +95,8 @@ def extract_molecule_placeholders(paths: list[Path]) -> dict[str, list[dict[str,
                             "synonyms": [],
                             "smiles": "",
                             "sources": [],
+                            "molecule_type": "solvent",
+                            "enabled": True,
                         },
                     )
                     if source not in entry["sources"]:
@@ -107,17 +116,26 @@ def write_molecule_placeholders(paths: list[Path], output_path: str | Path) -> P
     return output_file
 
 
-def load_name_to_smiles_map(path: str | Path | None) -> dict[str, str]:
+@dataclass(frozen=True, slots=True)
+class MoleculeRecord:
+    smiles: str
+    enabled: bool = True
+
+
+def _molecule_lookup_key(name: str) -> str:
+    return name.strip().lower()
+
+
+def load_molecule_lookup(path: str | Path | None) -> dict[str, MoleculeRecord]:
     if path is None:
         return {}
 
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    name_to_smiles: dict[str, str] = {}
+    lookup: dict[str, MoleculeRecord] = {}
 
     def register_entry(entry: dict[str, Any]) -> None:
         smiles = str(entry.get("smiles", "")).strip()
-        if not smiles:
-            return
+        enabled = bool(entry.get("enabled", True))
 
         names: list[str] = []
         primary_name = entry.get("name") or entry.get("primary_name") or entry.get("compound")
@@ -131,21 +149,25 @@ def load_name_to_smiles_map(path: str | Path | None) -> dict[str, str]:
             names.extend(str(part).strip() for part in synonyms if str(part).strip())
 
         for name in names:
-            name_to_smiles[name.lower()] = smiles
+            key = _molecule_lookup_key(name)
+            if key:
+                lookup[key] = MoleculeRecord(smiles=smiles, enabled=enabled)
 
     if isinstance(payload, dict):
         if all(isinstance(value, str) for value in payload.values()):
             for name, smiles in payload.items():
-                if smiles.strip():
-                    name_to_smiles[name.lower()] = smiles.strip()
-            return name_to_smiles
+                key = _molecule_lookup_key(name)
+                if key:
+                    lookup[key] = MoleculeRecord(smiles=smiles.strip())
+            return lookup
 
         for key in ("name_to_smiles", "molecules"):
             candidate = payload.get(key)
             if isinstance(candidate, dict):
                 for name, smiles in candidate.items():
-                    if isinstance(smiles, str) and smiles.strip():
-                        name_to_smiles[name.lower()] = smiles.strip()
+                    lookup_key = _molecule_lookup_key(name)
+                    if isinstance(smiles, str) and lookup_key:
+                        lookup[lookup_key] = MoleculeRecord(smiles=smiles.strip())
 
         for key in ("solutes", "solvents", "molecules"):
             candidate = payload.get(key)
@@ -153,11 +175,19 @@ def load_name_to_smiles_map(path: str | Path | None) -> dict[str, str]:
                 for entry in candidate:
                     if isinstance(entry, dict):
                         register_entry(entry)
-        return name_to_smiles
+        return lookup
 
     if isinstance(payload, list):
         for entry in payload:
             if isinstance(entry, dict):
                 register_entry(entry)
 
-    return name_to_smiles
+    return lookup
+
+
+def load_name_to_smiles_map(path: str | Path | None) -> dict[str, str]:
+    return {
+        name: record.smiles
+        for name, record in load_molecule_lookup(path).items()
+        if record.enabled and record.smiles
+    }

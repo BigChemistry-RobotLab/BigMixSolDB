@@ -3,13 +3,13 @@ from __future__ import annotations
 import math
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 import pandas as pd
 
 from bigmixsoldb.constants import FRACTION_UNITS, MISSING_VALUES, OUTPUT_COLUMNS
 from bigmixsoldb.files import normalize_doi_from_stem
-from bigmixsoldb.molecules import load_name_to_smiles_map
+from bigmixsoldb.molecules import MoleculeRecord, load_molecule_lookup
 from bigmixsoldb.yaml_utils import load_yaml_document
 
 MULTIPLICATION_SYMBOLS = [r"\\times", r"\\cdot", r"\times", r"\cdot", "·", "×", ""]
@@ -206,9 +206,9 @@ def normalize_solubility(value: Any, unit: Any) -> tuple[float | str, str]:
     unit_text = normalize_unit_text(unit)
 
     if numeric is None:
-        return clean_text(value), clean_text(unit)
+        return clean_text(value), ""
     if unit_text is None:
-        return numeric, ""
+        return clean_numeric_artifact(numeric), ""
 
     fraction_info = extract_fraction_unit(unit)
     if fraction_info is not None:
@@ -216,16 +216,33 @@ def normalize_solubility(value: Any, unit: Any) -> tuple[float | str, str]:
         return clean_numeric_artifact(numeric / divisor), canonical_unit
 
     normalized_unit = unit_text.replace(" ", "")
-    if normalized_unit in {"g/g", "gg-1"}:
-        return clean_numeric_artifact(numeric * 100.0), "g/100 g"
-    if normalized_unit.startswith("g/100g"):
-        return clean_numeric_artifact(numeric), "g/100 g"
-    if normalized_unit.startswith("g/100ml"):
-        return clean_numeric_artifact(numeric), "g/100 mL"
-    if normalized_unit in {"x", "molefraction"}:
+
+    if normalized_unit in {"mol/mol", "mole/mole"}:
+        return clean_numeric_artifact(numeric), "mole fraction"
+    if normalized_unit in {"mmol/mol", "millimol/mol", "millimole/mole"}:
+        return clean_numeric_artifact(numeric / 1_000.0), "mole fraction"
+    scaled_mol_fraction = re.fullmatch(
+        r"10\^(?:([+-]?\d+)|\{([+-]?\d+)\})(?:\\cdot|\\times|·|×)?mol/mol",
+        normalized_unit,
+    )
+    if scaled_mol_fraction:
+        exponent = int(scaled_mol_fraction.group(1) or scaled_mol_fraction.group(2))
+        return clean_numeric_artifact(numeric * (10**exponent)), "mole fraction"
+    if normalized_unit in {"x", "y", "molefraction"}:
         return clean_numeric_artifact(numeric), "mole fraction"
 
-    return clean_numeric_artifact(numeric), clean_text(unit)
+    if normalized_unit in {"g/g", "gg-1", "kg/kg", "kgkg-1"}:
+        return clean_numeric_artifact(numeric), "mass fraction"
+    if normalized_unit in {"g/100g", "g/100gsolution", "g/100gmixture"}:
+        return clean_numeric_artifact(numeric / 100.0), "mass fraction"
+    if normalized_unit in {"10g/100g", "10g/100gsolution", "10g/100gmixture"}:
+        return clean_numeric_artifact(numeric / 10.0), "mass fraction"
+    if normalized_unit in {"mg/g", "mgg-1"}:
+        return clean_numeric_artifact(numeric / 1_000.0), "mass fraction"
+    if normalized_unit in {"g/kg", "gkg-1"}:
+        return clean_numeric_artifact(numeric / 1_000.0), "mass fraction"
+
+    return clean_numeric_artifact(numeric), ""
 
 
 def normalize_temperature(value: Any, unit: Any) -> tuple[float | str, str]:
@@ -251,26 +268,38 @@ def normalize_pressure(value: Any, unit: Any) -> tuple[float | str, str]:
     numeric = parse_numeric_value(value)
     unit_text = normalize_unit_text(unit)
     if numeric is None:
-        return clean_text(value), clean_text(unit)
+        return clean_text(value), ""
     if unit_text is None or unit_text == "":
-        return numeric, clean_text(unit)
+        return clean_numeric_artifact(numeric), ""
 
     compact = unit_text.replace(" ", "")
+    compact = compact.replace("(", "").replace(")", "").replace(".", "")
     if compact in {"pa", "pascal", "pascals"}:
         return clean_numeric_artifact(numeric), "Pa"
+    if compact in {"hpa", "hectopascal", "hectopascals"}:
+        return clean_numeric_artifact(numeric * 100.0), "Pa"
     if compact == "kpa":
         return clean_numeric_artifact(numeric * 1_000.0), "Pa"
     if compact == "mpa":
         return clean_numeric_artifact(numeric * 1_000_000.0), "Pa"
-    if compact == "bar":
+    if compact in {"bar", "barg"}:
         return clean_numeric_artifact(numeric * 100_000.0), "Pa"
+    if compact == "mbar":
+        return clean_numeric_artifact(numeric * 100.0), "Pa"
     if compact == "atm":
         return clean_numeric_artifact(numeric * 101_325.0), "Pa"
-    if compact == "psi":
+    if compact in {"psi", "psia"}:
         return clean_numeric_artifact(numeric * 6_894.757293168), "Pa"
     if compact in {"torr", "mmhg"}:
         return clean_numeric_artifact(numeric * 133.322368421), "Pa"
-    return clean_numeric_artifact(numeric), clean_text(unit)
+    scaled_pascal = re.fullmatch(
+        r"(?:\\times|\\cdot|×|·)?10\^(?:([+-]?\d+)|\{([+-]?\d+)\})pa",
+        compact,
+    )
+    if scaled_pascal:
+        exponent = int(scaled_pascal.group(1) or scaled_pascal.group(2))
+        return clean_numeric_artifact(numeric * (10**exponent)), "Pa"
+    return clean_numeric_artifact(numeric), ""
 
 
 def fill_missing_binary_fraction(row: dict[str, Any]) -> None:
@@ -410,11 +439,72 @@ def simplify_nonfraction_additive_row(row: dict[str, Any]) -> None:
     row["Concentration Unit"] = ""
 
 
-def attach_smiles(row: dict[str, Any], name_to_smiles: dict[str, str]) -> None:
-    row["SMILES_Compound"] = name_to_smiles.get(clean_text(row["Compound Name"]).lower(), "")
-    row["SMILES_Solvent_1"] = name_to_smiles.get(clean_text(row["Solvent 1"]).lower(), "")
-    row["SMILES_Solvent_2"] = name_to_smiles.get(clean_text(row["Solvent 2"]).lower(), "")
-    row["SMILES_Solvent_3"] = name_to_smiles.get(clean_text(row["Solvent 3"]).lower(), "")
+MoleculeLookup = Mapping[str, MoleculeRecord | str]
+
+
+def _molecule_key(name: Any) -> str:
+    return clean_text(name).lower()
+
+
+def molecule_record_for_name(name: Any, molecule_lookup: MoleculeLookup) -> MoleculeRecord | None:
+    key = _molecule_key(name)
+    if not key:
+        return None
+    record = molecule_lookup.get(key)
+    if isinstance(record, str):
+        return MoleculeRecord(smiles=record)
+    return record
+
+
+def molecule_smiles(name: Any, molecule_lookup: MoleculeLookup) -> str:
+    record = molecule_record_for_name(name, molecule_lookup)
+    if record is None or not record.enabled:
+        return ""
+    return record.smiles
+
+
+def molecule_is_disabled(name: Any, molecule_lookup: MoleculeLookup) -> bool:
+    record = molecule_record_for_name(name, molecule_lookup)
+    return record is not None and not record.enabled
+
+
+def row_has_disabled_molecule(row: dict[str, Any], molecule_lookup: MoleculeLookup) -> bool:
+    molecule_names = [
+        row["Compound Name"],
+        row["Solvent 1"],
+        row["Solvent 2"],
+        row["Solvent 3"],
+        *split_pipe_field(row.get("Extra Solvents")),
+    ]
+    return any(molecule_is_disabled(name, molecule_lookup) for name in molecule_names)
+
+
+def classify_row_mixture_type(row: Mapping[str, Any]) -> str:
+    if not is_missing(row.get("Extra Solvents")):
+        return "extra"
+    if (
+        not is_missing(row.get("Solvent 1"))
+        and not is_missing(row.get("Solvent 2"))
+        and not is_missing(row.get("Solvent 3"))
+    ):
+        return "ternary"
+    if not is_missing(row.get("Solvent 1")) and not is_missing(row.get("Solvent 2")):
+        return "binary"
+    return "single"
+
+
+def record_disabled_molecule_row(row: Mapping[str, Any], stats: dict[str, Any]) -> None:
+    stats["disabled_molecule_rows_removed"] = stats.get("disabled_molecule_rows_removed", 0) + 1
+    by_type = stats.setdefault("disabled_molecule_rows_removed_by_type", {})
+    mixture_type = classify_row_mixture_type(row)
+    by_type[mixture_type] = by_type.get(mixture_type, 0) + 1
+
+
+def attach_smiles(row: dict[str, Any], molecule_lookup: MoleculeLookup) -> None:
+    row["SMILES_Compound"] = molecule_smiles(row["Compound Name"], molecule_lookup)
+    row["SMILES_Solvent_1"] = molecule_smiles(row["Solvent 1"], molecule_lookup)
+    row["SMILES_Solvent_2"] = molecule_smiles(row["Solvent 2"], molecule_lookup)
+    row["SMILES_Solvent_3"] = molecule_smiles(row["Solvent 3"], molecule_lookup)
 
     for column in ("SMILES_Compound", "SMILES_Solvent_1", "SMILES_Solvent_2", "SMILES_Solvent_3"):
         if clean_text(row[column]) == "":
@@ -509,8 +599,9 @@ def _solvent_override(value: Any) -> dict[str, Any]:
     }
 
 
-def normalize_row(row: dict[str, Any], document_review_required: bool, name_to_smiles: dict[str, str]) -> dict[str, Any]:
-    row["Requires Review"] = bool(row.get("Requires Review", False))
+def normalize_row(row: dict[str, Any], document_review_required: bool, molecule_lookup: MoleculeLookup) -> dict[str, Any]:
+    # inherit any pre-existing flag on the row OR the document-level review flag
+    row["Requires Review"] = bool(row.get("Requires Review", False) or document_review_required)
 
     for column in (
         "Compound Name",
@@ -551,7 +642,7 @@ def normalize_row(row: dict[str, Any], document_review_required: bool, name_to_s
     if parse_numeric_value(row["Solubility"]) is None:
         row["Requires Review"] = True
 
-    attach_smiles(row, name_to_smiles)
+    attach_smiles(row, molecule_lookup)
 
     for column in OUTPUT_COLUMNS:
         if column not in row:
@@ -562,9 +653,15 @@ def normalize_row(row: dict[str, Any], document_review_required: bool, name_to_s
     return row
 
 
-def flatten_yaml_file(path: str | Path, molecule_json: str | Path | None = None) -> pd.DataFrame:
+def flatten_yaml_file(
+    path: str | Path,
+    molecule_json: str | Path | None = None,
+    molecule_lookup: MoleculeLookup | None = None,
+    stats: dict[str, Any] | None = None,
+) -> pd.DataFrame:
     document, review_required = load_yaml_document(path)
-    name_to_smiles = load_name_to_smiles_map(molecule_json)
+    if molecule_lookup is None:
+        molecule_lookup = load_molecule_lookup(molecule_json)
     doi = normalize_doi_from_stem(path)
     rows: list[dict[str, Any]] = []
     document_review_required = review_required
@@ -604,9 +701,17 @@ def flatten_yaml_file(path: str | Path, molecule_json: str | Path | None = None)
                 for data_row in data_block[1:]:
                     row = dict(base_row)
                     apply_data_row(row, header, data_row)
-                    rows.append(normalize_row(row, document_review_required, name_to_smiles))
+                    if row_has_disabled_molecule(row, molecule_lookup):
+                        if stats is not None:
+                            record_disabled_molecule_row(row, stats)
+                        continue
+                    rows.append(normalize_row(row, document_review_required, molecule_lookup))
             else:
-                rows.append(normalize_row(base_row, document_review_required, name_to_smiles))
+                if row_has_disabled_molecule(base_row, molecule_lookup):
+                    if stats is not None:
+                        record_disabled_molecule_row(base_row, stats)
+                    continue
+                rows.append(normalize_row(base_row, document_review_required, molecule_lookup))
 
     dataframe = pd.DataFrame(rows)
     if dataframe.empty:
@@ -729,7 +834,9 @@ def merge_dataframes(
     )
     merged = drop_invalid_fraction_rows(merged)
     merged = dedupe_condition_rows(merged)
-    merged["Requires Review"] = False
+    # preserve any existing Requires Review flags; ensure missing values are False
+    if "Requires Review" in merged.columns:
+        merged["Requires Review"] = merged["Requires Review"].fillna(False).astype(bool)
     return merged[OUTPUT_COLUMNS]
 
 

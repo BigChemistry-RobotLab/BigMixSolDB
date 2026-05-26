@@ -249,3 +249,8 @@ python scripts/finetune.py \
 ```
 
 You can also pass a YAML or JSON config file to supply `SFTConfig` arguments such as batch size, learning rate, number of epochs, or mixed-precision settings.
+
+# License
+This repository is licensed under the AGPLv3 License. See [LICENSE](LICENSE) for details.
+
+If you would like to use the code in this repository for commercial purposes, please contact the BigChemistry team at [info@bigchemistry.nl](mailto:info@bigchemistry.nl) to discuss licensing options.

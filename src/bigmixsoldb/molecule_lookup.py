@@ -12,6 +12,7 @@ from urllib.parse import quote
 import requests
 from rdkit import Chem
 from requests import Session
+from tqdm import tqdm
 
 CHEMSCRIPT_AVAILABLE = find_spec("ChemScript") is not None
 
@@ -124,6 +125,20 @@ LOOKUP_METADATA_FIELDS = (
     "smiles_url",
     "smiles_note",
     "smiles_status",
+    "retrieval_metadata",
+)
+
+RETRIEVAL_METADATA_FIELDS = (
+    "smiles_source",
+    "smiles_query",
+    "smiles_status",
+    "smiles_match_name",
+    "smiles_exact_match",
+    "smiles_url",
+    "smiles_note",
+    "retrieved_smiles",
+    "human_validated_smiles",
+    "human_validation_method",
 )
 
 
@@ -158,6 +173,100 @@ def canonicalize_smiles(smiles: str) -> str | None:
 def _clear_lookup_metadata(entry: dict[str, Any]) -> None:
     for field in LOOKUP_METADATA_FIELDS:
         entry.pop(field, None)
+
+
+def _molecule_type_from_group(group: str, entry: dict[str, Any]) -> str:
+    existing = str(entry.get("molecule_type", "")).strip()
+    if existing:
+        return existing
+    if group == "solutes":
+        return "solute"
+    if group == "solvents":
+        return "solvent"
+    return "molecule"
+
+
+def _metadata_payload(
+    *,
+    smiles_source: str = "",
+    smiles_query: str = "",
+    smiles_status: str = "",
+    smiles_match_name: str = "",
+    smiles_exact_match: bool | str = "",
+    smiles_url: str = "",
+    smiles_note: str = "",
+    retrieved_smiles: str = "",
+    human_validated_smiles: str = "",
+    human_validation_method: str = "",
+) -> dict[str, Any]:
+    return {
+        "smiles_source": smiles_source,
+        "smiles_query": smiles_query,
+        "smiles_status": smiles_status,
+        "smiles_match_name": smiles_match_name,
+        "smiles_exact_match": smiles_exact_match,
+        "smiles_url": smiles_url,
+        "smiles_note": smiles_note,
+        "retrieved_smiles": retrieved_smiles,
+        "human_validated_smiles": human_validated_smiles,
+        "human_validation_method": human_validation_method,
+    }
+
+
+def _existing_retrieval_metadata(entry: dict[str, Any], existing_smiles: str) -> dict[str, Any]:
+    metadata = entry.get("retrieval_metadata")
+    if not isinstance(metadata, dict):
+        metadata = {}
+
+    merged = {
+        "smiles_source": metadata.get("smiles_source", entry.get("smiles_source", "")),
+        "smiles_query": metadata.get("smiles_query", entry.get("smiles_query", "")),
+        "smiles_status": metadata.get("smiles_status", entry.get("smiles_status", "existing")),
+        "smiles_match_name": metadata.get("smiles_match_name", entry.get("smiles_match_name", "")),
+        "smiles_exact_match": metadata.get("smiles_exact_match", entry.get("smiles_exact_match", "")),
+        "smiles_url": metadata.get("smiles_url", entry.get("smiles_url", "")),
+        "smiles_note": metadata.get("smiles_note", entry.get("smiles_note", "")),
+        "retrieved_smiles": metadata.get("retrieved_smiles", entry.get("retrieved_smiles", existing_smiles)),
+        "human_validated_smiles": metadata.get(
+            "human_validated_smiles",
+            entry.get("human_validated_smiles", ""),
+        ),
+        "human_validation_method": metadata.get(
+            "human_validation_method",
+            entry.get("human_validation_method", ""),
+        ),
+    }
+    return {field: merged.get(field, "") for field in RETRIEVAL_METADATA_FIELDS}
+
+
+def _shape_resolved_entry(
+    entry: dict[str, Any],
+    *,
+    group: str,
+    smiles: str,
+    metadata: dict[str, Any],
+) -> None:
+    name = str(entry.get("name", "")).strip()
+    synonyms = _extract_synonyms(entry.get("synonyms"))
+    sources = entry.get("sources", [])
+    if not isinstance(sources, list):
+        sources = [str(sources)] if sources else []
+
+    molecule_type = _molecule_type_from_group(group, entry)
+    enabled = entry.get("enabled", True)
+
+    entry.clear()
+    entry.update(
+        {
+            "name": name,
+            "synonyms": synonyms,
+            "smiles": smiles,
+            "sources": sources,
+            "molecule_type": molecule_type,
+            "enabled": bool(enabled),
+            "retrieval_metadata": {field: metadata.get(field, "") for field in RETRIEVAL_METADATA_FIELDS},
+        }
+    )
 
 
 def _dedupe_preserve_order(values: list[LookupCandidate]) -> list[LookupCandidate]:
@@ -532,11 +641,18 @@ def resolve_molecule_json_file(
     pubchem_cache: dict[str, LookupResult | None] = {}
 
     with requests.Session() as session:
-        for _, entry in entries:
+        for group, entry in tqdm(entries, desc="Resolving molecule SMILES"):
             existing_smiles = str(entry.get("smiles", "")).strip()
             if existing_smiles and not replace_existing:
                 summary["skipped"] += 1
-                entry.setdefault("smiles_status", "existing")
+                metadata = _existing_retrieval_metadata(entry, existing_smiles)
+                _clear_lookup_metadata(entry)
+                _shape_resolved_entry(
+                    entry,
+                    group=group,
+                    smiles=existing_smiles,
+                    metadata=metadata,
+                )
                 continue
 
             _clear_lookup_metadata(entry)
@@ -550,29 +666,42 @@ def resolve_molecule_json_file(
             )
 
             if result is None:
-                entry["smiles"] = ""
-                entry["smiles_status"] = "unresolved"
-                entry["smiles_note"] = "ChemScript and PubChem lookup failed"
+                _shape_resolved_entry(
+                    entry,
+                    group=group,
+                    smiles="",
+                    metadata=_metadata_payload(
+                        smiles_status="unresolved",
+                        smiles_note="ChemScript and PubChem lookup failed",
+                    ),
+                )
                 summary["unresolved"] += 1
                 continue
 
-            entry["smiles"] = result.smiles
-            entry["smiles_source"] = result.source
-            entry["smiles_query"] = result.query
-            entry["smiles_status"] = "resolved"
-            if result.matched_name:
-                entry["smiles_match_name"] = result.matched_name
-            if result.exact_match is not None:
-                entry["smiles_exact_match"] = result.exact_match
-            if result.url:
-                entry["smiles_url"] = result.url
-            if result.note:
-                entry["smiles_note"] = result.note
+            _shape_resolved_entry(
+                entry,
+                group=group,
+                smiles=result.smiles,
+                metadata=_metadata_payload(
+                    smiles_source=result.source,
+                    smiles_query=result.query,
+                    smiles_status="resolved",
+                    smiles_match_name=result.matched_name or "",
+                    smiles_exact_match=result.exact_match if result.exact_match is not None else "",
+                    smiles_url=result.url or "",
+                    smiles_note=result.note or "",
+                    retrieved_smiles=result.smiles,
+                    human_validated_smiles="",
+                    human_validation_method="",
+                ),
+            )
 
             summary["resolved"] += 1
             summary[result.source] += 1
 
+    resolved_entries = [entry for _, entry in entries]
+
     target_path = Path(output_path)
     target_path.parent.mkdir(parents=True, exist_ok=True)
-    target_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    target_path.write_text(json.dumps(resolved_entries, indent=2, ensure_ascii=False), encoding="utf-8")
     return summary
