@@ -9,10 +9,20 @@ import pandas as pd
 
 from bigmixsoldb.constants import FRACTION_UNITS, MISSING_VALUES, OUTPUT_COLUMNS
 from bigmixsoldb.files import normalize_doi_from_stem
-from bigmixsoldb.molecules import MoleculeRecord, load_molecule_lookup
+from bigmixsoldb.molecules import (
+    MoleculeLookupKey,
+    MoleculeRecord,
+    combine_molecule_records,
+    load_molecule_lookup,
+    normalize_molecule_dois,
+)
+from bigmixsoldb.units import (
+    basis_matches_solvent,
+    fraction_unit_divisor,
+    parse_solubility_unit,
+)
 from bigmixsoldb.yaml_utils import load_yaml_document
 
-MULTIPLICATION_SYMBOLS = [r"\\times", r"\\cdot", r"\times", r"\cdot", "·", "×", ""]
 IONIC_ADDITIVE_KEYWORDS = (
     " chloride",
     " bromide",
@@ -83,7 +93,7 @@ def normalize_unit_text(value: Any) -> str | None:
     text = text.replace("$", "")
     text = text.replace("{", "")
     text = text.replace("}", "")
-    text = text.replace("−", "")
+    text = text.replace("−", "-")
     text = text.replace(",", "")
     text = re.sub(r"\s+", " ", text)
     return text.strip()
@@ -121,7 +131,7 @@ def parse_numeric_value(value: Any) -> float | None:
     cleaned = cleaned.replace("(", "")
     cleaned = cleaned.replace(")", "")
     cleaned = cleaned.replace(",", "")
-    cleaned = cleaned.replace("−", "")
+    cleaned = cleaned.replace("−", "-")
     cleaned = cleaned.replace("\\\\", "\\")
 
     compact = cleaned.replace(" ", "")
@@ -146,44 +156,7 @@ def parse_numeric_value(value: Any) -> float | None:
 
 
 def extract_fraction_unit(unit: Any) -> tuple[float, str] | None:
-    if is_missing(unit):
-        return None
-
-    clean_str = str(unit).replace("$", "").replace(" ", "").replace(",", "").lower()
-    clean_str = clean_str.replace("−", "")
-
-    aliases = [
-        (r"(x(?:_\{?[a-z0-9]+\}?)?|molefraction|mol%|mole%)", "mole fraction"),
-        (r"(w(?:_\{?[a-z0-9]+\}?)?|massfraction|wt%|weight%|mass%|w%)", "mass fraction"),
-        (r"(v(?:_\{?[a-z0-9]+\}?)?|volumefraction|vol%|v/v|phi|ϕ)", "volume fraction"),
-    ]
-
-    for symbol in MULTIPLICATION_SYMBOLS:
-        symbol_pattern = re.escape(symbol)
-        for pattern, canonical_unit in aliases:
-            match = re.search(rf"10\^{{?([+-]?\d+)}}?{symbol_pattern}{pattern}", clean_str)
-            if match:
-                return 10 ** abs(int(match.group(1))), canonical_unit
-
-            match = re.search(rf"{pattern}{symbol_pattern}10\^{{?([+-]?\d+)}}?", clean_str)
-            if match:
-                return 10 ** abs(int(match.group(match.lastindex))), canonical_unit
-
-            match = re.search(rf"(\d+){symbol_pattern}{pattern}", clean_str)
-            if match:
-                return float(match.group(1)), canonical_unit
-
-            match = re.search(rf"{pattern}{symbol_pattern}(\d+)", clean_str)
-            if match:
-                return float(match.group(match.lastindex)), canonical_unit
-
-    for pattern, canonical_unit in aliases:
-        if re.fullmatch(pattern, clean_str):
-            if "%" in clean_str or "percent" in clean_str:
-                return 100.0, canonical_unit
-            return 1.0, canonical_unit
-
-    return None
+    return fraction_unit_divisor(unit)
 
 
 def normalize_concentration(value: Any, unit: Any) -> tuple[float | str, str]:
@@ -201,48 +174,44 @@ def normalize_concentration(value: Any, unit: Any) -> tuple[float | str, str]:
     return clean_numeric_artifact(numeric / divisor), canonical_unit
 
 
-def normalize_solubility(value: Any, unit: Any) -> tuple[float | str, str]:
+def normalize_solubility(
+    value: Any,
+    unit: Any,
+    *,
+    solvent_name: Any = None,
+    active_solvent_count: int | None = None,
+) -> tuple[float | str, str]:
     numeric = parse_numeric_value(value)
-    unit_text = normalize_unit_text(unit)
-
     if numeric is None:
-        return clean_text(value), ""
-    if unit_text is None:
+        return clean_text(value), clean_text(unit)
+    if is_missing(unit):
         return clean_numeric_artifact(numeric), ""
 
-    fraction_info = extract_fraction_unit(unit)
-    if fraction_info is not None:
-        divisor, canonical_unit = fraction_info
-        return clean_numeric_artifact(numeric / divisor), canonical_unit
+    parsed = parse_solubility_unit(unit)
+    direct_methods = {
+        "canonical_mole_fraction",
+        "canonical_mass_fraction",
+        "canonical_volume_fraction",
+        "percentage",
+        "scaled_fraction",
+        "mass_fraction",
+    }
+    if parsed.method in direct_methods:
+        return (
+            clean_numeric_artifact(numeric * parsed.factor),
+            str(parsed.result_unit),
+        )
+    if (
+        parsed.method == "basis_ratio"
+        and active_solvent_count == 1
+        and basis_matches_solvent(parsed, solvent_name)
+    ):
+        ratio = numeric * parsed.factor
+        if math.isfinite(ratio) and ratio > -1.0:
+            return clean_numeric_artifact(ratio / (1.0 + ratio)), str(parsed.result_unit)
 
-    normalized_unit = unit_text.replace(" ", "")
-
-    if normalized_unit in {"mol/mol", "mole/mole"}:
-        return clean_numeric_artifact(numeric), "mole fraction"
-    if normalized_unit in {"mmol/mol", "millimol/mol", "millimole/mole"}:
-        return clean_numeric_artifact(numeric / 1_000.0), "mole fraction"
-    scaled_mol_fraction = re.fullmatch(
-        r"10\^(?:([+-]?\d+)|\{([+-]?\d+)\})(?:\\cdot|\\times|·|×)?mol/mol",
-        normalized_unit,
-    )
-    if scaled_mol_fraction:
-        exponent = int(scaled_mol_fraction.group(1) or scaled_mol_fraction.group(2))
-        return clean_numeric_artifact(numeric * (10**exponent)), "mole fraction"
-    if normalized_unit in {"x", "y", "molefraction"}:
-        return clean_numeric_artifact(numeric), "mole fraction"
-
-    if normalized_unit in {"g/g", "gg-1", "kg/kg", "kgkg-1"}:
-        return clean_numeric_artifact(numeric), "mass fraction"
-    if normalized_unit in {"g/100g", "g/100gsolution", "g/100gmixture"}:
-        return clean_numeric_artifact(numeric / 100.0), "mass fraction"
-    if normalized_unit in {"10g/100g", "10g/100gsolution", "10g/100gmixture"}:
-        return clean_numeric_artifact(numeric / 10.0), "mass fraction"
-    if normalized_unit in {"mg/g", "mgg-1"}:
-        return clean_numeric_artifact(numeric / 1_000.0), "mass fraction"
-    if normalized_unit in {"g/kg", "gkg-1"}:
-        return clean_numeric_artifact(numeric / 1_000.0), "mass fraction"
-
-    return clean_numeric_artifact(numeric), ""
+    # Unsupported and row-context-dependent forms retain their source representation.
+    return clean_numeric_artifact(numeric), clean_text(unit)
 
 
 def normalize_temperature(value: Any, unit: Any) -> tuple[float | str, str]:
@@ -439,44 +408,119 @@ def simplify_nonfraction_additive_row(row: dict[str, Any]) -> None:
     row["Concentration Unit"] = ""
 
 
-MoleculeLookup = Mapping[str, MoleculeRecord | str]
+MoleculeLookup = Mapping[MoleculeLookupKey, MoleculeRecord | str]
 
 
 def _molecule_key(name: Any) -> str:
     return clean_text(name).lower()
 
 
-def molecule_record_for_name(name: Any, molecule_lookup: MoleculeLookup) -> MoleculeRecord | None:
-    key = _molecule_key(name)
-    if not key:
-        return None
+def _lookup_molecule_record(
+    molecule_lookup: MoleculeLookup,
+    key: MoleculeLookupKey,
+) -> MoleculeRecord | None:
     record = molecule_lookup.get(key)
     if isinstance(record, str):
         return MoleculeRecord(smiles=record)
     return record
 
 
-def molecule_smiles(name: Any, molecule_lookup: MoleculeLookup) -> str:
-    record = molecule_record_for_name(name, molecule_lookup)
-    if record is None or not record.enabled:
+def molecule_record_for_name(
+    name: Any,
+    molecule_lookup: MoleculeLookup,
+    molecule_type: str | None = None,
+    doi: Any = None,
+) -> MoleculeRecord | None:
+    key = _molecule_key(name)
+    if not key:
+        return None
+
+    normalized_type = clean_text(molecule_type).lower()
+    if normalized_type.endswith("s"):
+        normalized_type = normalized_type[:-1]
+
+    source_dois = normalize_molecule_dois(doi)
+    if source_dois:
+        source_records: list[MoleculeRecord] = []
+        for source_doi in source_dois:
+            exact_record = _lookup_molecule_record(
+                molecule_lookup,
+                (normalized_type, key, source_doi),
+            )
+            if exact_record is not None:
+                source_records.append(exact_record)
+                continue
+
+            cross_role_records = [
+                record
+                for candidate_type in ("solute", "solvent", "")
+                if candidate_type != normalized_type
+                if (
+                    record := _lookup_molecule_record(
+                        molecule_lookup,
+                        (candidate_type, key, source_doi),
+                    )
+                )
+                is not None
+            ]
+            cross_role_record = combine_molecule_records(cross_role_records)
+            if cross_role_record is not None:
+                source_records.append(cross_role_record)
+
+        if source_records:
+            return combine_molecule_records(source_records)
+
+    record = (
+        _lookup_molecule_record(molecule_lookup, (normalized_type, key))
+        if normalized_type
+        else None
+    )
+    if record is None:
+        record = _lookup_molecule_record(molecule_lookup, key)
+    return record
+
+
+def molecule_smiles(
+    name: Any,
+    molecule_lookup: MoleculeLookup,
+    molecule_type: str | None = None,
+    doi: Any = None,
+    *,
+    include_disabled: bool = False,
+) -> str:
+    record = molecule_record_for_name(name, molecule_lookup, molecule_type, doi)
+    if (
+        record is None
+        or record.ambiguous
+        or (not record.enabled and not include_disabled)
+    ):
         return ""
     return record.smiles
 
 
-def molecule_is_disabled(name: Any, molecule_lookup: MoleculeLookup) -> bool:
-    record = molecule_record_for_name(name, molecule_lookup)
-    return record is not None and not record.enabled
+def molecule_is_disabled(
+    name: Any,
+    molecule_lookup: MoleculeLookup,
+    molecule_type: str | None = None,
+    doi: Any = None,
+) -> bool:
+    record = molecule_record_for_name(name, molecule_lookup, molecule_type, doi)
+    return record is not None and not record.ambiguous and not record.enabled
 
 
 def row_has_disabled_molecule(row: dict[str, Any], molecule_lookup: MoleculeLookup) -> bool:
-    molecule_names = [
-        row["Compound Name"],
-        row["Solvent 1"],
-        row["Solvent 2"],
-        row["Solvent 3"],
-        *split_pipe_field(row.get("Extra Solvents")),
+    doi = row.get("doi")
+    typed_molecule_names = [
+        ("solute", row["Compound Name"]),
+        ("solvent", row["Solvent 1"]),
+        ("solvent", row["Solvent 2"]),
+        ("solvent", row["Solvent 3"]),
+        *(("solvent", name) for name in split_pipe_field(row.get("Extra Solvents"))),
     ]
-    return any(molecule_is_disabled(name, molecule_lookup) for name in molecule_names)
+    return any(
+        molecule_is_disabled(name, molecule_lookup, molecule_type, doi)
+        for molecule_type, name in typed_molecule_names
+    )
 
 
 def classify_row_mixture_type(row: Mapping[str, Any]) -> str:
@@ -500,11 +544,41 @@ def record_disabled_molecule_row(row: Mapping[str, Any], stats: dict[str, Any]) 
     by_type[mixture_type] = by_type.get(mixture_type, 0) + 1
 
 
-def attach_smiles(row: dict[str, Any], molecule_lookup: MoleculeLookup) -> None:
-    row["SMILES_Compound"] = molecule_smiles(row["Compound Name"], molecule_lookup)
-    row["SMILES_Solvent_1"] = molecule_smiles(row["Solvent 1"], molecule_lookup)
-    row["SMILES_Solvent_2"] = molecule_smiles(row["Solvent 2"], molecule_lookup)
-    row["SMILES_Solvent_3"] = molecule_smiles(row["Solvent 3"], molecule_lookup)
+def attach_smiles(
+    row: dict[str, Any],
+    molecule_lookup: MoleculeLookup,
+    *,
+    include_disabled: bool = False,
+) -> None:
+    doi = row.get("doi")
+    row["SMILES_Compound"] = molecule_smiles(
+        row["Compound Name"],
+        molecule_lookup,
+        "solute",
+        doi,
+        include_disabled=include_disabled,
+    )
+    row["SMILES_Solvent_1"] = molecule_smiles(
+        row["Solvent 1"],
+        molecule_lookup,
+        "solvent",
+        doi,
+        include_disabled=include_disabled,
+    )
+    row["SMILES_Solvent_2"] = molecule_smiles(
+        row["Solvent 2"],
+        molecule_lookup,
+        "solvent",
+        doi,
+        include_disabled=include_disabled,
+    )
+    row["SMILES_Solvent_3"] = molecule_smiles(
+        row["Solvent 3"],
+        molecule_lookup,
+        "solvent",
+        doi,
+        include_disabled=include_disabled,
+    )
 
     for column in ("SMILES_Compound", "SMILES_Solvent_1", "SMILES_Solvent_2", "SMILES_Solvent_3"):
         if clean_text(row[column]) == "":
@@ -599,7 +673,13 @@ def _solvent_override(value: Any) -> dict[str, Any]:
     }
 
 
-def normalize_row(row: dict[str, Any], document_review_required: bool, molecule_lookup: MoleculeLookup) -> dict[str, Any]:
+def normalize_row(
+    row: dict[str, Any],
+    document_review_required: bool,
+    molecule_lookup: MoleculeLookup,
+    *,
+    include_disabled_smiles: bool = False,
+) -> dict[str, Any]:
     # inherit any pre-existing flag on the row OR the document-level review flag
     row["Requires Review"] = bool(row.get("Requires Review", False) or document_review_required)
 
@@ -630,7 +710,18 @@ def normalize_row(row: dict[str, Any], document_review_required: bool, molecule_
     simplify_pure_solvent_row(row)
     simplify_nonfraction_additive_row(row)
 
-    row["Solubility"], row["Solubility Unit"] = normalize_solubility(row["Solubility"], row["Solubility Unit"])
+    row["_Original Solubility"] = row["Solubility"]
+    row["_Original Solubility Unit"] = row["Solubility Unit"]
+    active_solvent_count = sum(
+        not is_missing(row.get(column))
+        for column in ("Solvent 1", "Solvent 2", "Solvent 3", "Extra Solvents")
+    )
+    row["Solubility"], row["Solubility Unit"] = normalize_solubility(
+        row["Solubility"],
+        row["Solubility Unit"],
+        solvent_name=row.get("Solvent 1"),
+        active_solvent_count=active_solvent_count,
+    )
     row["Temperature"], row["Temperature Unit"] = normalize_temperature(row["Temperature"], row["Temperature Unit"])
     row["Pressure"], row["Pressure Unit"] = normalize_pressure(row["Pressure"], row["Pressure Unit"])
 
@@ -642,7 +733,7 @@ def normalize_row(row: dict[str, Any], document_review_required: bool, molecule_
     if parse_numeric_value(row["Solubility"]) is None:
         row["Requires Review"] = True
 
-    attach_smiles(row, molecule_lookup)
+    attach_smiles(row, molecule_lookup, include_disabled=include_disabled_smiles)
 
     for column in OUTPUT_COLUMNS:
         if column not in row:
@@ -658,6 +749,7 @@ def flatten_yaml_file(
     molecule_json: str | Path | None = None,
     molecule_lookup: MoleculeLookup | None = None,
     stats: dict[str, Any] | None = None,
+    blocked_rows: list[dict[str, Any]] | None = None,
 ) -> pd.DataFrame:
     document, review_required = load_yaml_document(path)
     if molecule_lookup is None:
@@ -704,12 +796,30 @@ def flatten_yaml_file(
                     if row_has_disabled_molecule(row, molecule_lookup):
                         if stats is not None:
                             record_disabled_molecule_row(row, stats)
+                        if blocked_rows is not None:
+                            blocked_rows.append(
+                                normalize_row(
+                                    row,
+                                    document_review_required,
+                                    molecule_lookup,
+                                    include_disabled_smiles=True,
+                                )
+                            )
                         continue
                     rows.append(normalize_row(row, document_review_required, molecule_lookup))
             else:
                 if row_has_disabled_molecule(base_row, molecule_lookup):
                     if stats is not None:
                         record_disabled_molecule_row(base_row, stats)
+                    if blocked_rows is not None:
+                        blocked_rows.append(
+                            normalize_row(
+                                base_row,
+                                document_review_required,
+                                molecule_lookup,
+                                include_disabled_smiles=True,
+                            )
+                        )
                     continue
                 rows.append(normalize_row(base_row, document_review_required, molecule_lookup))
 
@@ -717,11 +827,13 @@ def flatten_yaml_file(
     if dataframe.empty:
         dataframe = pd.DataFrame(columns=[*OUTPUT_COLUMNS, "Notes"])
 
-    for column in [*OUTPUT_COLUMNS, "Notes"]:
+    for column in [*OUTPUT_COLUMNS, "Notes", "_Original Solubility", "_Original Solubility Unit"]:
         if column not in dataframe.columns:
             dataframe[column] = False if column == "Requires Review" else ""
 
-    dataframe = dataframe[[*OUTPUT_COLUMNS, "Notes"]]
+    dataframe = dataframe[
+        [*OUTPUT_COLUMNS, "Notes", "_Original Solubility", "_Original Solubility Unit"]
+    ]
     return dataframe
 
 
@@ -742,6 +854,7 @@ def filter_complete_rows(
     *,
     require_smiles: bool = False,
     drop_review_required: bool = False,
+    require_numeric_solubility: bool = True,
 ) -> pd.DataFrame:
     df = dataframe.copy()
 
@@ -757,7 +870,8 @@ def filter_complete_rows(
     for column in required_columns:
         mask &= ~df[column].map(is_missing)
 
-    mask &= df["Solubility"].map(lambda value: parse_numeric_value(value) is not None)
+    if require_numeric_solubility:
+        mask &= df["Solubility"].map(lambda value: parse_numeric_value(value) is not None)
 
     if drop_review_required and "Requires Review" in df.columns:
         mask &= ~df["Requires Review"].fillna(False).astype(bool)
@@ -780,7 +894,7 @@ def filter_complete_rows(
 
     mask &= df.apply(row_is_complete, axis=1)
 
-    filtered = df[mask].drop_duplicates().reset_index(drop=True)
+    filtered = df[mask].reset_index(drop=True)
     return filtered
 
 
@@ -807,7 +921,8 @@ def dedupe_condition_rows(dataframe: pd.DataFrame) -> pd.DataFrame:
     condition_columns = [
         column
         for column in OUTPUT_COLUMNS
-        if column not in {"Solubility", "Solubility Unit", "Requires Review"}
+        if column in df.columns
+        and column not in {"Solubility", "Solubility Unit", "Requires Review"}
     ]
     deduped = df.drop_duplicates(subset=condition_columns, keep="first")
     return deduped.drop(columns=["_unit_rank"]).reset_index(drop=True)

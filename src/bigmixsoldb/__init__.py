@@ -6,6 +6,7 @@ __all__ = [
     "llm",
     "molecules",
     "postprocess",
+    "solvent_standardization",
     "vlm_parser",
     "yaml_utils",
 ]

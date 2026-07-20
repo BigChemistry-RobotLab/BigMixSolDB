@@ -18,8 +18,9 @@ The workflow covers the steps used in the article:
 2. Extract structured solubility data from Markdown to YAML with an LLM.
 3. Extract molecule names into an editable JSON file with empty SMILES placeholders.
 4. Optionally resolve SMILES in that JSON with ChemScript and PubChem fallback.
-5. Build a standardized, filtered CSV directly from YAML files, optionally filling SMILES from the previous JSON file.
-6. Compare a predicted CSV against a reference CSV and write a JSON error report.
+5. Build a standardized, filtered CSV directly from YAML files, optionally filling SMILES from the previous JSON file and recording filtering diagnostics.
+6. Curate the publication dataset by collapsing duplicate measurements reported by multiple papers and harmonizing solvent display names.
+7. Compare the curated CSV against a reference CSV and write a JSON error report.
 
 ## Installation
 
@@ -155,9 +156,32 @@ If ChemScript is installed in the active Python environment, it is used first. I
 
 ### 5. Build a Standardized Filtered CSV
 
+Solubilities that require a solvent density are converted only from an offline,
+exact-temperature manifest. Create or refresh that manifest separately:
+
+```bash
+python scripts/prefetch_densities.py outputs/yaml \
+  --molecules molecules_resolved.json \
+  --output outputs/density_manifest.json
+```
+
+The prefetch command seeds observations from `data/bigsoldb_densities.csv` when that
+file exists and queries PubChem only for identities and temperatures not satisfied
+locally. It retains alternative and rejected evidence for auditing. Dataset builds
+never query PubChem and never interpolate or guess a density. Manifests are
+schema-versioned, validated before use, and written atomically.
+
+The command can scan either extracted YAML inputs or an existing CSV. Use
+`--local-density-csv PATH` to select a different local density source, or add
+`--no-pubchem` to create the manifest entirely offline from local observations while
+recording any unsatisfied density requests.
+
 ```bash
 python scripts/build_csv.py outputs/yaml \
   --molecules molecules_resolved.json \
+  --density-manifest outputs/density_manifest.json \
+  --conversion-report outputs/solubility_conversion_report.csv \
+  --stats-output outputs/bigmixsoldb_filtering_stats.json \
   --output outputs/bigmixsoldb.csv
 ```
 
@@ -165,8 +189,19 @@ This script:
 
 - standardizes all YAML records into the publication CSV schema
 - merges them into one dataset
-- applies the filtering logic
+- converts supported single-solvent solubility units to fractions, with exact-temperature
+  density evidence where required
+- parses multiplier and power-of-ten notation with one shared, anchored unit grammar;
+  ambiguous OCR forms remain unchanged and are recorded in the conversion audit
+- applies completeness, invalid-result, reference, supported-solubility-unit, and
+  condition-deduplication filters as separate sequential stages (the supported-unit
+  filter runs before condition deduplication)
 - prints build statistics such as total inputs found, per-system counts, and filtering removals by reason
+- optionally writes reconciled stage-by-stage attrition as JSON with `--stats-output`
+- writes a genuinely pre-filter, pre-condition-deduplication `_unfiltered.csv`
+- optionally writes a row-level conversion audit with parsed notation, scale divisor,
+  exponent normalization, basis, attempted result, solvent identity, and density evidence
+  using `--conversion-report`
 
 The final CSV contains the standardized schema:
 
@@ -177,7 +212,32 @@ The final CSV contains the standardized schema:
 - review flag
 - DOI derived from the input filename
 
-### 6. Compare Against a Reference Dataset
+### 6. Collapse Duplicate Measurements Across Papers
+
+```bash
+python scripts/deduplicate_cross_doi.py outputs/bigmixsoldb.csv \
+  --output outputs/bigmixsoldb_deduplicated.csv \
+  --duplicate-report outputs/bigmixsoldb_duplicate_groups.csv \
+  --doi-duplicate-report outputs/bigmixsoldb_duplicate_dois.csv
+```
+
+This publication-curation step identifies the same measurement reported under different DOIs using normalized chemical structures and conditions. By default, solvent/concentration pairs are order-independent, stereochemistry is ignored, missing pressure is treated as unspecified, recognized pressure values use a 2% relative tolerance, and compatible differences in reported numeric precision can be matched. The retained row combines DOI provenance and fills missing metadata from its duplicates. Ambiguous precision matches are reported but not merged.
+
+Only cross-DOI duplicates are merged by default. Add `--same-doi-duplicates` when the input should also be deduplicated within individual papers. The two optional reports provide measurement-group and per-DOI audit trails.
+
+### 7. Harmonize Solvent Display Names
+
+```bash
+python scripts/standardize_solvent_names.py outputs/bigmixsoldb_deduplicated.csv \
+  --output outputs/bigmixsoldb_curated.csv \
+  --audit-output outputs/bigmixsoldb_solvent_name_map.csv
+```
+
+This changes only the `Solvent 1`, `Solvent 2`, and `Solvent 3` display-name columns. Solvents are grouped by the InChIKey derived from their SMILES, then assigned a curated common name when one is available or the most frequent observed name otherwise. The audit CSV records every original-to-canonical mapping and its source. Structure and measurement columns are preserved.
+
+Together, steps 6 and 7 turn the build output into the curated CSV used for downstream reference comparisons, figures, and publication metrics while retaining auditable reports of each normalization decision.
+
+### 8. Compare Against a Reference Dataset
 
 Compare against MixtureSolDB:
 

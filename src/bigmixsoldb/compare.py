@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from collections import Counter, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable
@@ -13,6 +13,8 @@ from rdkit import Chem, RDLogger
 from rdkit.Chem.inchi import InchiToInchiKey, MolToInchi
 
 from bigmixsoldb.postprocess import is_missing, normalize_unit_text
+from bigmixsoldb.doi import normalize_doi as normalize_individual_doi
+from bigmixsoldb.doi import split_dois
 
 RDLogger.DisableLog("rdApp.*")
 
@@ -29,13 +31,27 @@ def clean_text(value: Any) -> str | None:
 
 
 def normalize_doi(value: Any) -> str:
-    text = clean_text(value)
-    if text is None:
-        return ""
-    text = text.replace("_", "/").replace("", ":")
-    text = text.lower()
-    text = re.sub(r"\s*\(.*?\)\s*$", "", text)
-    return text.strip()
+    """Backward-compatible normalizer for one DOI value."""
+    return normalize_individual_doi(value)
+
+
+def _expand_records_by_doi(records: list[Record]) -> list[Record]:
+    expanded: list[Record] = []
+    for record in records:
+        dois = split_dois(record.doi)
+        expanded.extend(replace(record, doi=doi) for doi in dois)
+    return expanded
+
+
+def _expand_exclusions_by_doi(excluded: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    expanded: list[dict[str, Any]] = []
+    for item in excluded:
+        dois = split_dois(item.get("doi"))
+        if not dois:
+            expanded.append(item)
+            continue
+        expanded.extend({**item, "doi": doi} for doi in dois)
+    return expanded
 
 
 @lru_cache(maxsize=50_000)
@@ -1455,6 +1471,14 @@ def _build_report(
     reference_total_rows: int,
     reference_label: str,
 ) -> dict[str, Any]:
+    predicted_comparable_source_rows_all_dois = {
+        record.row_index for record in predicted_records
+    }
+    predicted_records = _expand_records_by_doi(predicted_records)
+    reference_records = _expand_records_by_doi(reference_records)
+    predicted_excluded = _expand_exclusions_by_doi(predicted_excluded)
+    reference_excluded = _expand_exclusions_by_doi(reference_excluded)
+
     deduped_reference_records = _dedupe_records(reference_records)
     selected_reference_records, reference_metric_selection = _select_reference_records_for_predicted_metrics(
         deduped_reference_records,
@@ -1475,6 +1499,9 @@ def _build_report(
     reference_source_rows_all_dois = {record.row_index for record in reference_records_all_dois}
     reference_source_rows_with_shared_doi = {
         record.row_index for record in reference_records_with_shared_doi
+    }
+    predicted_comparable_source_rows_with_shared_doi = {
+        record.row_index for record in comparable_records
     }
 
     without_smiles_pairs, predicted_non_matches_without_smiles, reference_non_matches_without_smiles = pair_by_key(
@@ -1581,11 +1608,17 @@ def _build_report(
         "predicted_total_rows": predicted_total_rows,
         "reference_total_rows": reference_total_rows,
         "predicted_comparable_rows_all_dois": len(comparable_records_all_dois),
+        "predicted_comparable_source_rows_all_dois": len(
+            predicted_comparable_source_rows_all_dois
+        ),
         "reference_comparable_rows_all_dois": len(reference_records_all_dois),
         "reference_comparable_source_rows_all_dois": len(reference_source_rows_all_dois),
         "predicted_comparable_rows": len(comparable_records),
         "reference_comparable_rows": reference_shared_rows,
         "predicted_comparable_rows_with_shared_doi": len(comparable_records),
+        "predicted_comparable_source_rows_with_shared_doi": len(
+            predicted_comparable_source_rows_with_shared_doi
+        ),
         "reference_comparable_rows_with_shared_doi": reference_shared_rows,
         "reference_comparable_source_rows_with_shared_doi": len(reference_source_rows_with_shared_doi),
         "predicted_comparable_rows_without_shared_doi": excluded_missing_doi,
@@ -1925,6 +1958,10 @@ def print_comparison_summary(
         reference_label = report.get("reference_label", reference_label)
         reference_source_rows_all = summary.get("reference_comparable_source_rows_all_dois")
         reference_source_rows_shared = summary.get("reference_comparable_source_rows_with_shared_doi")
+        predicted_source_rows_all = summary.get("predicted_comparable_source_rows_all_dois")
+        predicted_source_rows_shared = summary.get(
+            "predicted_comparable_source_rows_with_shared_doi"
+        )
         reference_smiles_skips_all = summary.get("reference_missing_smiles_skipped_all_dois")
         predicted_exclusions_all = summary.get("predicted_exclusion_reasons_all_dois", {})
         predicted_exclusions_shared = summary.get("predicted_exclusion_reasons", {})
@@ -1944,8 +1981,10 @@ def print_comparison_summary(
         print("NORMALIZED RECORD COUNTS")
         print("=" * 80)
         print(
-            f"{predicted_label} comparable measurement records, all DOIs: "
-            f"{summary['predicted_comparable_rows_all_dois']} / {summary['predicted_total_rows']} raw rows"
+            f"{predicted_label} comparable DOI-record associations, all DOIs: "
+            f"{summary['predicted_comparable_rows_all_dois']} from "
+            f"{predicted_source_rows_all} source rows "
+            f"({summary['predicted_total_rows']} raw rows)"
         )
         if reference_source_rows_all is None:
             print(
@@ -2004,8 +2043,9 @@ def print_comparison_summary(
         print("COMPARABILITY SUMMARY")
         print("=" * 80)
         print(
-            f"Shared-DOI comparable {predicted_label} measurement records: "
-            f"{summary['predicted_comparable_rows']} / {summary['predicted_comparable_rows_all_dois']}"
+            f"Shared-DOI comparable {predicted_label} DOI-record associations: "
+            f"{summary['predicted_comparable_rows']} from {predicted_source_rows_shared} "
+            f"source rows / {summary['predicted_comparable_rows_all_dois']} associations"
         )
         print(
             f"{predicted_label} comparable records excluded because DOI is absent in {reference_label}: "
@@ -2017,11 +2057,11 @@ def print_comparison_summary(
         )
         if predicted_exclusions_all:
             print(
-                f"{predicted_label} raw rows excluded before DOI filtering: "
+                f"{predicted_label} DOI-associated exclusions before DOI filtering: "
                 f"{sum(predicted_exclusions_all.values())}"
             )
         if predicted_exclusions_shared:
-            print(f"{predicted_label} raw rows excluded within shared DOI scope:")
+            print(f"{predicted_label} DOI-associated exclusions within shared DOI scope:")
             for reason, count in predicted_exclusions_shared.items():
                 print(f"  {reason}: {count}")
 
